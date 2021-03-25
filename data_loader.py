@@ -16,19 +16,19 @@ class DataLoader:
 
         self.entities = self._get_entities()
         self.relations = self._get_relations()
-        self.entity_mapping = {}
-        self.relation_mapping = {}
-        self.determine_entity_mapping()
-        self.determine_relation_mapping()
+        self.entity_to_idx = {}
+        self.relation_to_idx = {}
+        self._determine_entity_mapping()
+        self._determine_relation_mapping()
 
     def get_1_to_n_train_data(self):
         sr_pairs = defaultdict(list)
         ro_pairs = defaultdict(list)
 
         for s, r, o in self.data['train']:
-            s_idx = self.entity_mapping[s]
-            r_idx = self.relation_mapping[r]
-            o_idx = self.entity_mapping[o]
+            s_idx = self.entity_to_idx[s]
+            r_idx = self.relation_to_idx[r]
+            o_idx = self.entity_to_idx[o]
             sr_pairs[(s_idx, r_idx)].append(o_idx)
             ro_pairs[(r_idx, o_idx)].append(s_idx)
 
@@ -41,9 +41,9 @@ class DataLoader:
         mapped_data = []
 
         for s, r, o in self.data[dataset]:
-            s_idx = self.entity_mapping[s]
-            r_idx = self.relation_mapping[r]
-            o_idx = self.entity_mapping[o]
+            s_idx = self.entity_to_idx[s]
+            r_idx = self.relation_to_idx[r]
+            o_idx = self.entity_to_idx[o]
             mapped_data.append([s_idx, r_idx, o_idx])
 
         return mapped_data
@@ -69,11 +69,11 @@ class DataLoader:
 
         return relations
 
-    def determine_entity_mapping(self):
-        self.entity_mapping = {e: i for i, e in enumerate(self.entities)}
+    def _determine_entity_mapping(self):
+        self.entity_to_idx = {e: i for i, e in enumerate(self.entities)}
 
-    def determine_relation_mapping(self):
-        self.relation_mapping = {r: i for i, r in enumerate(self.relations)}
+    def _determine_relation_mapping(self):
+        self.relation_to_idx = {r: i for i, r in enumerate(self.relations)}
 
 
 class DataLoaderException(Exception):
