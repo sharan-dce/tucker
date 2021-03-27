@@ -34,3 +34,22 @@ tensor([[1.3786e-02, 9.9045e-01, 2.6718e-02, 1.1845e-01, 7.9078e-01, 9.9812e-01,
 Here is where ```gradient_mask``` comes in.
 Whichever values in the ```core_tensor``` should not be modified should have an entry of ```0```
 in the ```gradient_mask``` and other values should be ```1```.
+
+
+#### DistMult Model Calling
+DistMult model can be called directly using `TuckER` model class. The calling approach 
+is as follows:
+```python3
+    ini_tensor = np.zeros((4, 4, 4))  # (d_e, d_e, d_e)
+    ini_tensor[np.diag_indices(ini_tensor.shape[0], ndim=3)] = 1  # superdiagonal with 1
+    model = TuckER(9, 9, ini_tensor, np.zeros_like(ini_tensor).astype(np.float32))
+    output = model([0, 1], [5, 2])
+```
+
+#### RESCAL Model Calling
+RESCAL model actually has no relation embedding so we implement a class of RESCAL instead of
+using TuckER directly.
+```python3
+    model = RESCAL(7, 8, np.random.normal(size=[3, 8, 3]).astype(np.float32))
+    output = model([0, 1], [0, 1])
+```
