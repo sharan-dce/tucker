@@ -40,7 +40,7 @@ in the ```gradient_mask``` and other values should be ```1```.
 DistMult model can be called directly using `TuckER` model class. The calling approach 
 is as follows:
 ```python3
-ini_tensor = np.zeros((4, 4, 4))  # (d_e, d_e, d_e)
+    ini_tensor = np.zeros((4, 4, 4))  # (d_e, d_e, d_e)
     ini_tensor[np.diag_indices(ini_tensor.shape[0], ndim=3)] = 1  # superdiagonal with 1
     model = TuckER(9, 9, ini_tensor, np.zeros_like(ini_tensor).astype(np.float32))
     output = model([0, 1], [5, 2])
