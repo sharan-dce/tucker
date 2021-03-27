@@ -81,7 +81,6 @@ class TuckER(torch.nn.Module):
             subject = torch.unsqueeze(subject, axis=0)
 
         output = tucker_multiplication(core_tensor, subject, relation, objects)
-        print(output.shape)
         sigmoid = torch.nn.Sigmoid()
         output = sigmoid(output)
         return output
