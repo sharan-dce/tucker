@@ -1,14 +1,6 @@
 import torch
 import numpy as np
 
-def matmul(x, y, axis):
-    x = torch.transpose(x, -1, axis)
-    output = torch.matmul(x, y)
-    output = torch.unsqueeze(output, dim=-1)
-    output = torch.transpose(output, -1, axis)
-    output = torch.squeeze(output, dim=axis)
-    return output
-
 # x: tensor of shape b x * x d x * where * denotes any dimensions in between
 # y: matrix of shape b x d
 def batched_tensorvectormul(x, y, axis):
