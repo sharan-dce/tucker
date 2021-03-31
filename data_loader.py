@@ -20,6 +20,24 @@ class DataLoader:
         self.relation_to_idx = {}
         self._determine_entity_mapping()
         self._determine_relation_mapping()
+        self.sr_pairs, self.ro_pairs = self._determine_1_to_n_train_data()
+
+    def get_y(self, subject_idxs, relation_idxs):
+        '''
+        For a list of subject-relation pairs (s, r) of size L, return a binary
+        matrix of size n_e x L where each column represents which objects make
+        a true fact with a particular (s, r) pair.
+
+        Index-based
+        '''
+        assert(len(subject_idxs) == len(relation_idxs))
+        result = torch.zeros((len(self.entities), len(subject_idxs)))
+
+        for i, (si, ri) in enumerate(zip(subject_idxs, relation_idxs)):
+            for v in self.sr_pairs[(si, ri)]:
+                result[v, i] = 1
+
+        return result
 
     def get_1_to_n_train_data(self):
         '''
@@ -29,6 +47,17 @@ class DataLoader:
         - the other with the pairs (r, o) as keys and a list of objects s as
           values such that facts (s, r, o) are in the dataset
         
+        This function returns the indices of the entities and relations
+        '''
+        return self.sr_pairs, self.ro_pairs
+
+    def _determine_1_to_n_train_data(self):
+        '''
+        Reorganise the training data such that for all pairs (s, r) of a
+        subject and a relation (respectively (r, o) of a relation and an
+        object) we have a list of objects (respectively subjects) such that the
+        triple (s, r, o) makes a true fact in the dataset.
+
         This function returns the indices of the entities and relations
         '''
         sr_pairs = defaultdict(list)
