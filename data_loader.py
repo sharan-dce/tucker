@@ -1,3 +1,4 @@
+from typing import List, Dict, Tuple, Set
 from collections import defaultdict
 import torch
 
@@ -5,7 +6,7 @@ DATA_FOLDER = 'data'
 
 
 class DataLoader:
-    def __init__(self, dataset: str):
+    def __init__(self, dataset: str) -> None:
         self.data = {}
 
         dsets = ['train', 'valid', 'test']
@@ -22,7 +23,7 @@ class DataLoader:
         self._determine_relation_mapping()
         self.sr_pairs, self.ro_pairs = self._determine_1_to_n_train_data()
 
-    def get_y(self, subject_idxs, relation_idxs):
+    def get_y(self, subject_idxs: List[int], relation_idxs: List[int]) -> torch.Tensor:
         '''
         For a list of subject-relation pairs (s, r) of size L, return a binary
         matrix of size n_e x L where each column represents which objects make
@@ -39,7 +40,7 @@ class DataLoader:
 
         return result
 
-    def get_1_to_n_train_data(self):
+    def get_1_to_n_train_data(self) -> Tuple[Dict[Tuple[int, int], List[int]], Dict[Tuple[int, int], List[int]]]:
         '''
         Get the training data as two dictionaries:
         - one with the pairs (s, r) as keys and a list of objects o as values
@@ -51,7 +52,7 @@ class DataLoader:
         '''
         return self.sr_pairs, self.ro_pairs
 
-    def _determine_1_to_n_train_data(self):
+    def _determine_1_to_n_train_data(self) -> Tuple[Dict[Tuple[int, int], List[int]], Dict[Tuple[int, int], List[int]]]:
         '''
         Reorganise the training data such that for all pairs (s, r) of a
         subject and a relation (respectively (r, o) of a relation and an
@@ -72,7 +73,7 @@ class DataLoader:
 
         return sr_pairs, ro_pairs
 
-    def map_data_to_indices(self, dataset: str):
+    def map_data_to_indices(self, dataset: str) -> List[List[int]]:
         '''
         Given a dataset (one of train/valid/test), return all the facts (s,
         r, o) present in the dataset.
@@ -92,7 +93,7 @@ class DataLoader:
 
         return mapped_data
 
-    def get_embeddings(self, de: int, dr: int):
+    def get_embeddings(self, de: int, dr: int) -> Tuple[torch.nn.Embedding, torch.nn.Embedding]:
         '''
         Given an entity embedding dimension `de` and the relation embedding
         dimension `dr`, return the embeddings for the entities and relations in
@@ -102,7 +103,7 @@ class DataLoader:
         R = torch.nn.Embedding(len(self.relations), dr)
         return E, R
 
-    def _get_entities(self):
+    def _get_entities(self) -> Set[str]:
         '''
         Get all the entities present in any of the datasets
         '''
@@ -113,7 +114,7 @@ class DataLoader:
 
         return entities
 
-    def _get_relations(self):
+    def _get_relations(self) -> Set[str]:
         '''
         Get all the relations present in any of the datasets
         '''
@@ -124,13 +125,13 @@ class DataLoader:
 
         return relations
 
-    def _determine_entity_mapping(self):
+    def _determine_entity_mapping(self) -> None:
         '''
         Map entities to indices from 1 to len(self.entities) - 1
         '''
         self.entity_to_idx = {e: i for i, e in enumerate(self.entities)}
 
-    def _determine_relation_mapping(self):
+    def _determine_relation_mapping(self) -> None:
         '''
         Map relations to indices from 1 to len(self.relations) - 1
         '''
