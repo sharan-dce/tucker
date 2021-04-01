@@ -38,7 +38,7 @@ class DataLoader:
             for v in self.sr_pairs[(si, ri)]:
                 result[v, i] = 1
 
-        return result
+        return torch.transpose(result, 0, 1)
 
     def get_1_to_n_train_data(self) -> Tuple[Dict[Tuple[int, int], List[int]], Dict[Tuple[int, int], List[int]]]:
         '''
