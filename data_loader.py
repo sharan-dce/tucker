@@ -31,7 +31,7 @@ class DataLoader:
     def get_y(self, subject_idxs: List[int], relation_idxs: List[int]) -> torch.Tensor:
         '''
         For a list of subject-relation pairs (s, r) of size L, return a binary
-        matrix of size n_e x L where each column represents which objects make
+        matrix of size L x n_e where each column represents which objects make
         a true fact with a particular (s, r) pair.
 
         Index-based
