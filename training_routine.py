@@ -72,11 +72,13 @@ def train(model, data_loader, epochs, lr, lr_decay):
         )
         print('Train Accuracy: {}'.format(train_accuracy))
 
-dl = data_loader.DataLoader('FB15k')
-model = tucker.TuckER(
-    len(dl.entities),
-    len(dl.relations),
-    np.random.normal(size=[3, 5, 3])
-)
 
-train(model, data_loader=dl, epochs=2, lr=0.0001, lr_decay=0.99)
+if __name__ == '__main__':
+    dl = data_loader.DataLoader('FB15k')
+    model = tucker.TuckER(
+        len(dl.entities),
+        len(dl.relations),
+        np.random.normal(size=[3, 5, 3])
+    )
+
+    train(model, data_loader=dl, epochs=2, lr=0.0001, lr_decay=0.99)
