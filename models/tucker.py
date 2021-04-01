@@ -53,10 +53,10 @@ def tucker_multiplication(core, s, r, o):
 class TuckER(torch.nn.Module):
     def __init__(
             self, 
-            num_entities: int, 
-            num_relations: int, 
-            initial_tensor, 
-            gradient_mask=None, 
+            num_entities: int,
+            num_relations: int,
+            initial_tensor,
+            gradient_mask=None,
             initial_entity_embeddings=None,
             initial_relation_embeddings=None
         ):
@@ -88,9 +88,10 @@ class TuckER(torch.nn.Module):
         self.relation_embeddings.weight.data.copy_(relation_embeddings)
 
     def forward(self, subject_index, relation_index):
+        batch_size = subject_index.shape[0]
         core_tensor = get_gradient_masked_tensor_clone(self.core_tensor, self.gradient_mask)
-        subject = self.entity_embeddings(torch.tensor(subject_index))
-        relation = self.relation_embeddings(torch.tensor(relation_index))
+        subject = self.entity_embeddings(subject_index)
+        relation = self.relation_embeddings(relation_index)
         objects = self.entity_embeddings.weight
 
         if len(relation.shape) == 1:
@@ -99,6 +100,6 @@ class TuckER(torch.nn.Module):
             subject = torch.unsqueeze(subject, axis=0)
 
         output = tucker_multiplication(core_tensor, subject, relation, objects)
-        sigmoid = torch.nn.Sigmoid()
-        output = sigmoid(output)
+        output = torch.sigmoid(output)
+        output = torch.reshape(output, [batch_size, -1])
         return output
