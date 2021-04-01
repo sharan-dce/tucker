@@ -6,14 +6,19 @@ DATA_FOLDER = 'data'
 
 
 class DataLoader:
-    def __init__(self, dataset: str) -> None:
+    def __init__(self, dataset: str, add_reverses: bool = True) -> None:
         self.data = {}
 
         dsets = ['train', 'valid', 'test']
 
         for dset in dsets:
             with open(f'{DATA_FOLDER}/{dataset}/{dset}.txt') as f:
-                self.data[dset] = list(map(str.split, f.read().strip().split('\n')))
+                dset_data = list(map(str.split, f.read().strip().split('\n')))
+
+                if add_reverses:
+                    dset_data += [[o, r + '_reverse', s] for s, r, o in dset_data]
+
+                self.data[dset] = dset_data
 
         self.entities = self._get_entities()
         self.relations = self._get_relations()
@@ -40,40 +45,40 @@ class DataLoader:
 
         return torch.transpose(result, 0, 1)
 
-    def get_1_to_n_train_data(self) -> Tuple[Dict[Tuple[int, int], List[int]], Dict[Tuple[int, int], List[int]]]:
+    def get_1_to_n_train_data(self) -> Tuple[Dict[Tuple[int, int], Set[int]], Dict[Tuple[int, int], Set[int]]]:
         '''
         Get the training data as two dictionaries:
-        - one with the pairs (s, r) as keys and a list of objects o as values
+        - one with the pairs (s, r) as keys and a set of objects o as values
           such that facts (s, r, o) are in the dataset
-        - the other with the pairs (r, o) as keys and a list of objects s as
+        - the other with the pairs (r, o) as keys and a set of objects s as
           values such that facts (s, r, o) are in the dataset
-        
+
         This function returns the indices of the entities and relations
         '''
         return self.sr_pairs, self.ro_pairs
 
-    def _determine_1_to_n_train_data(self) -> Tuple[Dict[Tuple[int, int], List[int]], Dict[Tuple[int, int], List[int]]]:
+    def _determine_1_to_n_train_data(self) -> Tuple[Dict[Tuple[int, int], Set[int]], Dict[Tuple[int, int], Set[int]]]:
         '''
         Reorganise the training data such that for all pairs (s, r) of a
         subject and a relation (respectively (r, o) of a relation and an
-        object) we have a list of objects (respectively subjects) such that the
+        object) we have a set of objects (respectively subjects) such that the
         triple (s, r, o) makes a true fact in the dataset.
 
         This function returns the indices of the entities and relations
         '''
-        sr_pairs = defaultdict(list)
-        ro_pairs = defaultdict(list)
+        sr_pairs = defaultdict(set)
+        ro_pairs = defaultdict(set)
 
         for s, r, o in self.data['train']:
             s_idx = self.entity_to_idx[s]
             r_idx = self.relation_to_idx[r]
             o_idx = self.entity_to_idx[o]
-            sr_pairs[(s_idx, r_idx)].append(o_idx)
-            ro_pairs[(r_idx, o_idx)].append(s_idx)
+            sr_pairs[(s_idx, r_idx)].add(o_idx)
+            ro_pairs[(r_idx, o_idx)].add(s_idx)
 
         return sr_pairs, ro_pairs
 
-    def map_data_to_indices(self, dataset: str) -> List[List[int]]:
+    def get_all_facts(self, dataset: str) -> List[Tuple[int, int, int]]:
         '''
         Given a dataset (one of train/valid/test), return all the facts (s,
         r, o) present in the dataset.
@@ -89,7 +94,7 @@ class DataLoader:
             s_idx = self.entity_to_idx[s]
             r_idx = self.relation_to_idx[r]
             o_idx = self.entity_to_idx[o]
-            mapped_data.append([s_idx, r_idx, o_idx])
+            mapped_data.append((s_idx, r_idx, o_idx))
 
         return mapped_data
 
