@@ -1,5 +1,7 @@
+from typing import List, Tuple
 import torch
 import data_loader
+from data_loader import DataLoader
 import numpy as np
 from models import tucker
 from tqdm import tqdm
@@ -9,6 +11,56 @@ BATCH_SIZE = 8
 def unzip(x):
     x = zip(*x)
     return list(x)
+
+def generate_negative_facts(dl: DataLoader, s: int, r: int, o: int) -> Tuple[List[Tuple[int, int, int]], List[Tuple[int, int, int]]]:
+    '''
+    Given a fact (s, r, o), return all the triples (s', r, o) and (s, r, o')
+    that are not present in the dataset (negative facts) along with the
+    original true fact
+    '''
+    sr_negative_facts = []
+    ro_negative_facts = []
+
+    for e in dl.entities:
+        if e not in dl.sr_pairs[(s, r)]:
+            sr_negative_facts.append((s, r, e))
+        if e not in dl.ro_pairs[(r, o)]:
+            ro_negative_facts.append((e, r, o))
+
+    return sr_negative_facts, ro_negative_facts
+
+def measure_performance(model: tucker.TuckER, dl: DataLoader, ks: List[int] = [1, 3, 10]) -> float:
+    '''
+    Measure the performance of a model by computing a mean reciprocal rank and
+    hits@k for each k in `ks`
+    '''
+    mrr = 0
+    test_facts = dl.get_all_facts('test')
+    hits_k = {k: 0 for k in ks}
+
+    for s, r, o in test_facts:
+        output = model(s, r)
+
+        rank = 1
+        negatives, _ = generate_negative_facts(dl, s, r, o)
+
+        for _, _, negative_o in negatives:
+            if output[negative_o] > output[o]:
+                rank += 1
+
+        mrr += 1/rank
+
+        for k in hits_k.keys():
+            if rank <= k:
+                hits_k[k] += 1
+
+    # normalise
+    mrr /= len(test_facts)
+
+    for k in hits_k.keys():
+        hits_k[k] /= len(test_facts)
+
+    return mrr, hits_k
 
 def _train_step(model, data_loader, batch_loader, optimizer, desc=None):
     loss = torch.nn.BCELoss()
