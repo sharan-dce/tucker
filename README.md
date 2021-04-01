@@ -3,7 +3,7 @@
 ## Using the TuckER class
 
 This class fully supports batching.
-```
+```python3
 tucker = TuckER(num_entities, num_relations, initial_tensor, gradient_mask=None)
 ```
 
@@ -14,7 +14,7 @@ In such cases, it is initialized to a tensor of ones with the same shape as ```i
 
 Example:
 
-```
+```python3
 tucker = TuckER(9, 9, np.random.normal(size=[3, 11, 3]).astype(np.float32), np.ones([3, 11, 3]).astype(np.float32))
 output = tucker([0, 1], [5, 2])
 print(output)
