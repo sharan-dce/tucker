@@ -14,7 +14,11 @@ def unzip(x):
     return list(x)
 
 
-def generate_negative_facts(dl: DataLoader, s: int, r: int, o: int) -> Tuple[List[Tuple[int, int, int]], List[Tuple[int, int, int]]]:
+def generate_negative_facts(
+        dl: DataLoader,
+        s_idx: int,
+        r_idx: int,
+        o_idx: int) -> Tuple[List[Tuple[int, int, int]], List[Tuple[int, int, int]]]:
     '''
     Given a fact (s, r, o), return all the triples (s', r, o) and (s, r, o')
     that are not present in the dataset (negative facts) along with the
@@ -24,10 +28,12 @@ def generate_negative_facts(dl: DataLoader, s: int, r: int, o: int) -> Tuple[Lis
     ro_negative_facts = []
 
     for e in dl.entities:
-        if e not in dl.sr_pairs[(s, r)]:
-            sr_negative_facts.append((s, r, e))
-        if e not in dl.ro_pairs[(r, o)]:
-            ro_negative_facts.append((e, r, o))
+        e_idx = dl.entity_to_idx[e]
+
+        if e_idx not in dl.sr_pairs[(s_idx, r_idx)]:
+            sr_negative_facts.append((s_idx, r_idx, e_idx))
+        if e_idx not in dl.ro_pairs[(r_idx, o_idx)]:
+            ro_negative_facts.append((e_idx, r_idx, o_idx))
 
     return sr_negative_facts, ro_negative_facts
 
@@ -42,7 +48,7 @@ def measure_performance(model: tucker.TuckER, dl: DataLoader, ks: List[int] = [1
     hits_k = {k: 0 for k in ks}
 
     for s, r, o in test_facts:
-        output = model(torch.LongTensor([s]), torch.LongTensor([r]))
+        output = model(torch.LongTensor([s]), torch.LongTensor([r]))[0]
 
         rank = 1
         negatives, _ = generate_negative_facts(dl, s, r, o)
