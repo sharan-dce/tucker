@@ -1,7 +1,6 @@
 import argparse
 import data_loader
 import numpy as np
-from models import tucker
 from training_routine import train, measure_performance
 import torch
 
@@ -10,6 +9,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, default="tucker", nargs="?",
+                        help="Which model to use: tucker, distmult or rescal.")
     parser.add_argument("--dataset", type=str, default="FB15k", nargs="?",
                     help="Which dataset to use: FB15k, FB15k-237, WN18 or WN18RR.")
     parser.add_argument("--num_iterations", type=int, default=500, nargs="?",
@@ -35,11 +36,30 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     dl = data_loader.DataLoader(args.dataset)
-    model = tucker.TuckER(
-        len(dl.entities),
-        len(dl.relations),
-        np.random.normal(size=[args.edim, args.rdim, args.edim])
-    ).to(device)
+
+    if args.model == 'tucker':
+        from models import tucker
+        model = tucker.TuckER(
+            len(dl.entities),
+            len(dl.relations),
+            np.random.normal(size=[args.edim, args.rdim, args.edim])
+        ).to(device)
+    elif args.model == 'rescal':
+        from models import rescal
+        model = rescal.RESCAL(
+            len(dl.entities),
+            len(dl.relations),
+            args.edim
+        ).to(device)
+    elif args.model == 'distmult':
+        from models import distmult
+        model = distmult.DistMult(
+            len(dl.entities),
+            len(dl.relations),
+            args.edim
+        ).to(device)
+    else:
+        raise Exception("Model not defined!")
 
     # train(model, data_loader=dl, epochs=args.num_iterations, lr=args.lr, lr_decay=0.99, batch_size=args.batch_size)
     model.eval()
