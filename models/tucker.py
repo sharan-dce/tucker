@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 def batched_tensorvectormul(x, y, axis):
     '''
     x: tensor of shape b x * x d x * where * denotes any dimensions in between
@@ -66,14 +68,14 @@ class TuckER(torch.nn.Module):
         super(TuckER, self).__init__()
         assert(initial_tensor.shape == gradient_mask.shape)
         entity_embedding_dim, relation_embedding_dim = initial_tensor.shape[: 2]
-        self.gradient_mask = torch.tensor(gradient_mask.astype(np.float32), requires_grad=False)
+        self.gradient_mask = torch.tensor(gradient_mask.astype(np.float32), requires_grad=False).to(device)
         self.core_tensor = torch.nn.Parameter(
                                         torch.tensor(initial_tensor.astype(np.float32)), 
                                         requires_grad=True
                                     )
 
-        self.entity_embeddings = torch.nn.Embedding(num_entities, entity_embedding_dim)
-        self.relation_embeddings = torch.nn.Embedding(num_relations, relation_embedding_dim)
+        self.entity_embeddings = torch.nn.Embedding(num_entities, entity_embedding_dim).to(device)
+        self.relation_embeddings = torch.nn.Embedding(num_relations, relation_embedding_dim).to(device)
         if initial_entity_embeddings is not None:
             self.set_entity_embeddings(initial_entity_embeddings)
         if initial_relation_embeddings is not None:
@@ -90,8 +92,8 @@ class TuckER(torch.nn.Module):
     def forward(self, subject_index, relation_index):
         batch_size = subject_index.shape[0]
         core_tensor = get_gradient_masked_tensor_clone(self.core_tensor, self.gradient_mask)
-        subject = self.entity_embeddings(subject_index)
-        relation = self.relation_embeddings(relation_index)
+        subject = self.entity_embeddings(torch.LongTensor(subject_index).to(device))
+        relation = self.relation_embeddings(torch.LongTensor(relation_index).to(device))
         objects = self.entity_embeddings.weight
 
         if len(relation.shape) == 1:

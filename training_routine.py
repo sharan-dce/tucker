@@ -6,11 +6,13 @@ import numpy as np
 from models import tucker
 from tqdm import tqdm
 
-BATCH_SIZE = 8
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 def unzip(x):
     x = zip(*x)
     return list(x)
+
 
 def generate_negative_facts(dl: DataLoader, s: int, r: int, o: int) -> Tuple[List[Tuple[int, int, int]], List[Tuple[int, int, int]]]:
     '''
@@ -29,7 +31,8 @@ def generate_negative_facts(dl: DataLoader, s: int, r: int, o: int) -> Tuple[Lis
 
     return sr_negative_facts, ro_negative_facts
 
-def measure_performance(model: tucker.TuckER, dl: DataLoader, ks: List[int] = [1, 3, 10]) -> float:
+
+def measure_performance(model: tucker.TuckER, dl: DataLoader, ks: List[int] = [1, 3, 10]) -> Tuple[int, dict]:
     '''
     Measure the performance of a model by computing a mean reciprocal rank and
     hits@k for each k in `ks`
@@ -39,7 +42,7 @@ def measure_performance(model: tucker.TuckER, dl: DataLoader, ks: List[int] = [1
     hits_k = {k: 0 for k in ks}
 
     for s, r, o in test_facts:
-        output = model(s, r)
+        output = model(torch.LongTensor([s]), torch.LongTensor([r]))
 
         rank = 1
         negatives, _ = generate_negative_facts(dl, s, r, o)
@@ -62,6 +65,7 @@ def measure_performance(model: tucker.TuckER, dl: DataLoader, ks: List[int] = [1
 
     return mrr, hits_k
 
+
 def _train_step(model, data_loader, batch_loader, optimizer, desc=None):
     loss = torch.nn.BCELoss()
     for subject_index, relation_index in tqdm(batch_loader, desc=desc):
@@ -73,11 +77,12 @@ def _train_step(model, data_loader, batch_loader, optimizer, desc=None):
         target = data_loader.get_y(
             subject_idxs=subject_index,
             relation_idxs=relation_index
-        )
+        ).to(device)
         loss_val = loss(output, target=target)
         loss_val.backward()
         optimizer.step()
-    
+
+
 def test(model, data_loader, batch_loader):
 
     total_predictions, correct_predictions = 0, 0
@@ -90,14 +95,15 @@ def test(model, data_loader, batch_loader):
         target = data_loader.get_y(
             subject_idxs=subject_index,
             relation_idxs=relation_index
-        )
+        ).to(device)
         _correct_predictions = (output == target).count_nonzero()
         _correct_predictions = int(_correct_predictions)
         correct_predictions += _correct_predictions
         total_predictions += len(torch.reshape(output, [-1]))
     return correct_predictions / total_predictions
 
-def train(model, data_loader, epochs, lr, lr_decay):
+
+def train(model, data_loader, epochs, lr, lr_decay, batch_size):
     optimizer = torch.optim.Adam(
         params=model.parameters(),
         lr=lr
@@ -107,7 +113,7 @@ def train(model, data_loader, epochs, lr, lr_decay):
         gamma=lr_decay
     )
     sl = data_loader.get_1_to_n_train_data()[0]
-    batch_loader = torch.utils.data.DataLoader(list(sl.keys()), batch_size=BATCH_SIZE)
+    batch_loader = torch.utils.data.DataLoader(list(sl.keys()), batch_size=batch_size)
     for epoch in range(epochs):
         _train_step(
             model=model,
@@ -130,7 +136,7 @@ if __name__ == '__main__':
     model = tucker.TuckER(
         len(dl.entities),
         len(dl.relations),
-        np.random.normal(size=[3, 5, 3])
+        np.random.normal(size=[200, 30, 200])
     )
 
     train(model, data_loader=dl, epochs=2, lr=0.0001, lr_decay=0.99)
