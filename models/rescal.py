@@ -18,7 +18,7 @@ class RESCAL(TuckER):
             initial_tensor=np.random.normal(size=[embedding_dim, num_relations, embedding_dim]),
             initial_relation_embeddings=np.identity(num_relations, dtype=np.float32)
         )
-        self.core_tensor.requires_grad = False
+        # self.core_tensor.requires_grad = False
         self.relation_embeddings.weight.requires_grad = False
 
 if __name__ == '__main__':
