@@ -13,11 +13,11 @@ if __name__ == '__main__':
                         help="Which model to use: tucker, distmult or rescal.")
     parser.add_argument("--dataset", type=str, default="FB15k", nargs="?",
                     help="Which dataset to use: FB15k, FB15k-237, WN18 or WN18RR.")
-    parser.add_argument("--num_iterations", type=int, default=500, nargs="?",
+    parser.add_argument("--num_iterations", type=int, default=20, nargs="?",
                     help="Number of iterations.")
-    parser.add_argument("--batch_size", type=int, default=16, nargs="?",
+    parser.add_argument("--batch_size", type=int, default=64, nargs="?",
                     help="Batch size.")
-    parser.add_argument("--lr", type=float, default=0.0005, nargs="?",
+    parser.add_argument("--lr", type=float, default=0.005, nargs="?",
                     help="Learning rate.")
     parser.add_argument("--edim", type=int, default=200, nargs="?",
                     help="Entity embedding dimensionality.")
@@ -61,6 +61,6 @@ if __name__ == '__main__':
     else:
         raise Exception("Model not defined!")
 
-    # train(model, data_loader=dl, epochs=args.num_iterations, lr=args.lr, lr_decay=0.99, batch_size=args.batch_size)
+    train(model, data_loader=dl, epochs=args.num_iterations, lr=args.lr, lr_decay=0.99, batch_size=args.batch_size)
     model.eval()
     measure_performance(model, dl)

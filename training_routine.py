@@ -47,7 +47,7 @@ def measure_performance(model: tucker.TuckER, dl: DataLoader, ks: List[int] = [1
     test_facts = dl.get_all_facts('test')
     hits_k = {k: 0 for k in ks}
 
-    for s, r, o in test_facts:
+    for s, r, o in tqdm(test_facts, "Measure Performance"):
         output = model(torch.LongTensor([s]), torch.LongTensor([r]))[0]
 
         rank = 1

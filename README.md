@@ -29,6 +29,23 @@ tensor([[1.3786e-02, 9.9045e-01, 2.6718e-02, 1.1845e-01, 7.9078e-01, 9.9812e-01,
          9.9992e-01, 4.7132e-01, 1.4876e-03]], grad_fn=<SigmoidBackward>)
 ```
 
+## Training
+
+#### work on normal server
+```
+cd tucker
+python3 train_script.py --model tucker --dataset FB15k
+```
+
+#### work on Colab
+First open a new session with GPU
+
+```
+!git clone https://github.com/sharan-dce/tucker.git
+%cd tucker
+!python3 train_script.py --model tucker --dataset FB15k
+```
+
 ## Using TuckER to implement other knowledge-graph completion algorithms
 
 Here is where ```gradient_mask``` comes in.
