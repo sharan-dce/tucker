@@ -155,8 +155,4 @@ if __name__ == '__main__':
         np.random.normal(size=[200, 30, 200])
     )
 
-    print('measuring performance')
-    measure_performance(model, dl)
-    print('done')
-
     train(model, data_loader=dl, epochs=2, lr=0.0001, lr_decay=0.99)
