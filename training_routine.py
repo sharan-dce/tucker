@@ -14,31 +14,54 @@ def unzip(x):
     return list(x)
 
 
-def generate_negative_facts(
+def generate_negative_objects_for_triple(
         dl: DataLoader,
         s_idx: int,
         r_idx: int,
-        o_idx: int) -> Tuple[List[Tuple[int, int, int]], List[Tuple[int, int, int]]]:
+        o_idx: int) -> torch.LongTensor:
     '''
-    Given a fact (s, r, o), return all the triples (s', r, o) and (s, r, o')
-    that are not present in the dataset (negative facts) along with the
-    original true fact
+    Given a fact (s, r, o), return all the objects o' such that the triple (s,
+    r, o') is not in the training set
     '''
-    sr_negative_facts = []
-    ro_negative_facts = []
+    return torch.LongTensor([dl.entity_to_idx[e] for e in dl.entities if dl.entity_to_idx[e] not in dl.sr_pairs[(s_idx, r_idx)]])
+    # negative_objects = []
 
-    for e in dl.entities:
-        e_idx = dl.entity_to_idx[e]
+    # for e in dl.entities:
+    #     e_idx = dl.entity_to_idx[e]
 
-        if e_idx not in dl.sr_pairs[(s_idx, r_idx)]:
-            sr_negative_facts.append((s_idx, r_idx, e_idx))
-        if e_idx not in dl.ro_pairs[(r_idx, o_idx)]:
-            ro_negative_facts.append((e_idx, r_idx, o_idx))
+    #     if e_idx not in dl.sr_pairs[(s_idx, r_idx)]:
+    #         negative_objects
+    #         sr_negative_facts.append((s_idx, r_idx, e_idx))
+    #     if e_idx not in dl.ro_pairs[(r_idx, o_idx)]:
+    #         ro_negative_facts.append((e_idx, r_idx, o_idx))
 
-    return sr_negative_facts, ro_negative_facts
+    # return sr_negative_facts, ro_negative_facts
 
 
-def measure_performance(model: tucker.TuckER, dl: DataLoader, ks: List[int] = [1, 3, 10]) -> Tuple[int, dict]:
+def generate_negative_objects(
+        dl: DataLoader,
+        s_idxs: torch.Tensor,
+        r_idxs: torch.Tensor,
+        o_idxs: torch.Tensor) -> torch.LongTensor:
+    '''
+    Given a tensor of facts (s, r, o), for each fact return all the objects o'
+    such that (s, r, o') is not present in the training dataset (i.e. negative
+    facts)
+    '''
+    result = []
+
+    for i in range(len(s_idxs)):
+        s, r, o = s_idxs[i], r_idxs[i], o_idxs[i]
+
+        result.append(generate_negative_objects_for_triple(dl, s, r, o))
+
+    return torch.stack(result)
+
+
+def measure_performance(
+        model: tucker.TuckER,
+        dl: DataLoader,
+        ks: List[int] = [1, 3, 10]) -> Tuple[int, dict]:
     '''
     Measure the performance of a model by computing a mean reciprocal rank and
     hits@k for each k in `ks`
@@ -46,22 +69,20 @@ def measure_performance(model: tucker.TuckER, dl: DataLoader, ks: List[int] = [1
     mrr = 0
     test_facts = dl.get_all_facts('test')
     hits_k = {k: 0 for k in ks}
+    batch_test_loader = torch.utils.data.DataLoader(test_facts, batch_size=100)
 
-    for s, r, o in tqdm(test_facts, "Measure Performance"):
-        output = model(torch.LongTensor([s]), torch.LongTensor([r]))[0]
+    for s, r, o in tqdm(batch_test_loader, 'Measuring performance'):
+        output = model(s, r)
+        negatives = generate_negative_objects(dl, s, r, o)
 
-        rank = 1
-        negatives, _ = generate_negative_facts(dl, s, r, o)
+        # This shouldn't be done iteratively in the ideal world
+        for i, negative in enumerate(negatives):
+            rank = sum(output[i][negative] >= output[i][o[i]]).item()
+            mrr += 1/rank
 
-        for _, _, negative_o in negatives:
-            if output[negative_o] > output[o]:
-                rank += 1
-
-        mrr += 1/rank
-
-        for k in hits_k.keys():
-            if rank <= k:
-                hits_k[k] += 1
+            for k in hits_k.keys():
+                if rank <= k:
+                    hits_k[k] += 1
 
     # normalise
     mrr /= len(test_facts)
@@ -144,5 +165,9 @@ if __name__ == '__main__':
         len(dl.relations),
         np.random.normal(size=[200, 30, 200])
     )
+
+    print('measuring performance')
+    measure_performance(model, dl)
+    print('done')
 
     train(model, data_loader=dl, epochs=2, lr=0.0001, lr_decay=0.99)
