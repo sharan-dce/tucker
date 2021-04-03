@@ -23,26 +23,15 @@ def generate_negative_objects_for_triple(
     Given a fact (s, r, o), return all the objects o' such that the triple (s,
     r, o') is not in the training set
     '''
-    return torch.LongTensor([dl.entity_to_idx[e] for e in dl.entities if dl.entity_to_idx[e] not in dl.sr_pairs[(s_idx, r_idx)]])
-    # negative_objects = []
-
-    # for e in dl.entities:
-    #     e_idx = dl.entity_to_idx[e]
-
-    #     if e_idx not in dl.sr_pairs[(s_idx, r_idx)]:
-    #         negative_objects
-    #         sr_negative_facts.append((s_idx, r_idx, e_idx))
-    #     if e_idx not in dl.ro_pairs[(r_idx, o_idx)]:
-    #         ro_negative_facts.append((e_idx, r_idx, o_idx))
-
-    # return sr_negative_facts, ro_negative_facts
+    negative = [dl.entity_to_idx[e] for e in dl.entities if dl.entity_to_idx[e] not in dl.sr_pairs[(s_idx, r_idx)]]
+    return torch.LongTensor(negative)
 
 
 def generate_negative_objects(
         dl: DataLoader,
         s_idxs: torch.Tensor,
         r_idxs: torch.Tensor,
-        o_idxs: torch.Tensor) -> torch.LongTensor:
+        o_idxs: torch.Tensor) -> List[torch.LongTensor]:
     '''
     Given a tensor of facts (s, r, o), for each fact return all the objects o'
     such that (s, r, o') is not present in the training dataset (i.e. negative
@@ -51,11 +40,11 @@ def generate_negative_objects(
     result = []
 
     for i in range(len(s_idxs)):
-        s, r, o = s_idxs[i], r_idxs[i], o_idxs[i]
+        s, r, o = s_idxs[i].item(), r_idxs[i].item(), o_idxs[i].item()
 
         result.append(generate_negative_objects_for_triple(dl, s, r, o))
 
-    return torch.stack(result)
+    return result
 
 
 def measure_performance(
@@ -77,7 +66,7 @@ def measure_performance(
 
         # This shouldn't be done iteratively in the ideal world
         for i, negative in enumerate(negatives):
-            rank = sum(output[i][negative] >= output[i][o[i]]).item()
+            rank = (output[i][negative] >= output[i][o[i]]).sum().item()
             mrr += 1/rank
 
             for k in hits_k.keys():
