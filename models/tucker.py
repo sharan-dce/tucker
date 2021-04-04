@@ -29,7 +29,11 @@ def get_gradient_masked_tensor_clone(tensor, grad_mask):
     return tensor + tensor_clone
 
 
-def tucker_multiplication(core, s, r, o, d1: torch.nn.Dropout, d2: torch.nn.Dropout, d3: torch.nn.Dropout):
+def tucker_multiplication(
+    core, s, r, o,
+    d1: torch.nn.Dropout, d2: torch.nn.Dropout, d3: torch.nn.Dropout,
+    b1: torch.nn.BatchNorm1d, b2: torch.nn.BatchNorm1d
+    ):
     '''
     core of shape e x r x e
     s of shape b x e
@@ -47,10 +51,12 @@ def tucker_multiplication(core, s, r, o, d1: torch.nn.Dropout, d2: torch.nn.Drop
 
     core = torch.unsqueeze(core, axis=0).repeat([batch_size, 1, 1, 1])
 
+    s = b1(s)
     s = d1(s)
     output = batched_tensorvectormul(x=core, y=r, axis=2)
     output = d2(output)
     output = batched_tensorvectormul(x=output, y=s, axis=1)
+    output = b2(output)
     output = d3(output)
     output = torch.matmul(output, torch.transpose(input=o, dim0=0, dim1=1))
 
@@ -81,6 +87,7 @@ class TuckER(torch.nn.Module):
                                     )
 
         self.dropouts = [torch.nn.Dropout(d) for d in [d1, d2, d3]]
+        self.batch_norms = [torch.nn.BatchNorm1d(entity_embedding_dim), torch.nn.BatchNorm1d(entity_embedding_dim)]
 
         self.entity_embeddings = torch.nn.Embedding(num_entities, entity_embedding_dim).to(device)
         self.relation_embeddings = torch.nn.Embedding(num_relations, relation_embedding_dim).to(device)
@@ -109,7 +116,14 @@ class TuckER(torch.nn.Module):
         if len(subject.shape) == 1:
             subject = torch.unsqueeze(subject, axis=0)
 
-        output = tucker_multiplication(core_tensor, subject, relation, objects, *self.dropouts)
+        output = tucker_multiplication(
+            core_tensor, 
+            subject, 
+            relation, 
+            objects, 
+            *self.dropouts, 
+            *self.batch_norms
+        )
         output = torch.sigmoid(output)
         output = torch.reshape(output, [batch_size, -1])
         return output
