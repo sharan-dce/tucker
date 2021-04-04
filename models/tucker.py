@@ -106,12 +106,12 @@ class TuckER(torch.nn.Module):
 
     def forward(self, subject_index, relation_index):
 
-        e1 = self.entity_embeddings(subject_index)
+        e1 = self.entity_embeddings(subject_index.to(device))
         x = self.batch_norms[0](e1)
         x = self.dropouts[0](x)
         x = x.view(-1, 1, e1.size(1))
 
-        r = self.relation_embeddings(relation_index)
+        r = self.relation_embeddings(relation_index.to(device))
         W_mat = torch.mm(r, self.core_tensor.view(r.size(1), -1))
         W_mat = W_mat.view(-1, e1.size(1), e1.size(1))
         W_mat = self.dropouts[1](W_mat)
