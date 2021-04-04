@@ -17,7 +17,7 @@ if __name__ == '__main__':
                     help="Number of iterations.")
     parser.add_argument("--batch_size", type=int, default=64, nargs="?",
                     help="Batch size.")
-    parser.add_argument("--lr", type=float, default=0.005, nargs="?",
+    parser.add_argument("--lr", type=float, default=0.002, nargs="?",
                     help="Learning rate.")
     parser.add_argument("--edim", type=int, default=200, nargs="?",
                     help="Entity embedding dimensionality.")

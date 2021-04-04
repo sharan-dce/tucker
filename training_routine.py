@@ -165,8 +165,8 @@ def train(
             desc='Epoch {}'.format(epoch)
         )
         lr_scheduler.step()
-        if (epoch + 1) % 3 == 0:
-            measure_performance(model, data_loader)
+        if (epoch + 1) % 5 == 0:
+            print(measure_performance(model, data_loader))
 
 
 if __name__ == '__main__':
