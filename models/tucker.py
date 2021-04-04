@@ -1,4 +1,5 @@
 import torch
+from typing import List
 import numpy as np
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -28,7 +29,7 @@ def get_gradient_masked_tensor_clone(tensor, grad_mask):
     return tensor + tensor_clone
 
 
-def tucker_multiplication(core, s, r, o):
+def tucker_multiplication(core, s, r, o, d1: torch.nn.Dropout, d2: torch.nn.Dropout, d3: torch.nn.Dropout):
     '''
     core of shape e x r x e
     s of shape b x e
@@ -45,8 +46,12 @@ def tucker_multiplication(core, s, r, o):
     batch_size = s.shape[0]
 
     core = torch.unsqueeze(core, axis=0).repeat([batch_size, 1, 1, 1])
-    output = batched_tensorvectormul(x=core, y=s, axis=1)
-    output = batched_tensorvectormul(x=output, y=r, axis=1)
+
+    s = d1(s)
+    output = batched_tensorvectormul(x=core, y=r, axis=2)
+    output = d2(output)
+    output = batched_tensorvectormul(x=output, y=s, axis=1)
+    output = d3(output)
     output = torch.matmul(output, torch.transpose(input=o, dim0=0, dim1=1))
 
     return output
@@ -59,6 +64,7 @@ class TuckER(torch.nn.Module):
             num_relations: int,
             initial_tensor,
             gradient_mask=None,
+            d1=0.0, d2=0.0, d3=0.0,
             initial_entity_embeddings=None,
             initial_relation_embeddings=None
         ):
@@ -73,6 +79,8 @@ class TuckER(torch.nn.Module):
                                         torch.tensor(initial_tensor.astype(np.float32)), 
                                         requires_grad=True
                                     )
+
+        self.dropouts = [torch.nn.Dropout(d) for d in [d1, d2, d3]]
 
         self.entity_embeddings = torch.nn.Embedding(num_entities, entity_embedding_dim).to(device)
         self.relation_embeddings = torch.nn.Embedding(num_relations, relation_embedding_dim).to(device)
@@ -101,7 +109,7 @@ class TuckER(torch.nn.Module):
         if len(subject.shape) == 1:
             subject = torch.unsqueeze(subject, axis=0)
 
-        output = tucker_multiplication(core_tensor, subject, relation, objects)
+        output = tucker_multiplication(core_tensor, subject, relation, objects, *self.dropouts)
         output = torch.sigmoid(output)
         output = torch.reshape(output, [batch_size, -1])
         return output

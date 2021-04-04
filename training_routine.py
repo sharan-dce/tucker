@@ -55,6 +55,7 @@ def measure_performance(
     Measure the performance of a model by computing a mean reciprocal rank and
     hits@k for each k in `ks`
     '''
+    model.eval()
     mrr = 0
     test_facts = dl.get_all_facts('test')
     hits_k = {k: 0 for k in ks}
@@ -79,6 +80,7 @@ def measure_performance(
     for k in hits_k.keys():
         hits_k[k] /= len(test_facts)
 
+    model.train()
     return mrr, hits_k
 
 
@@ -101,6 +103,7 @@ def _train_step(model, data_loader, batch_loader, optimizer, desc=None):
 
 def test(model, data_loader, batch_loader):
 
+    model.eval()
     total_predictions, correct_predictions = 0, 0
     for subject_index, relation_index in tqdm(batch_loader, 'Testing'):
         output = model(
@@ -116,6 +119,7 @@ def test(model, data_loader, batch_loader):
         _correct_predictions = int(_correct_predictions)
         correct_predictions += _correct_predictions
         total_predictions += len(torch.reshape(output, [-1]))
+    model.train()
     return correct_predictions / total_predictions
 
 

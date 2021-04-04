@@ -8,6 +8,7 @@ class DistMult(TuckER):
             num_entities: int,
             num_relations: int,
             embedding_dim: int,
+            d1=0.0, d2=0.0, d3=0.0
         ):
         self.embedding_dim = embedding_dim
         ini_tensor = np.zeros([embedding_dim, embedding_dim, embedding_dim])
@@ -16,7 +17,8 @@ class DistMult(TuckER):
             num_entities=num_entities,
             num_relations=num_relations,
             initial_tensor=ini_tensor,
-            gradient_mask=np.zeros_like(ini_tensor).astype(np.float32)
+            gradient_mask=np.zeros_like(ini_tensor).astype(np.float32),
+            d1=d1, d2=d2, d3=d3
         )
         self.core_tensor.requires_grad = False
 
