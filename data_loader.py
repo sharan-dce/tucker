@@ -57,7 +57,7 @@ class DataLoader:
         '''
         return self.sr_pairs, self.ro_pairs
 
-    def get_1_to_n_valid_data(self) -> Tuple[Dict[Tuple[int, int, Set[int]]], Dict[Tuple[int, int], Set[int]]]:
+    def get_1_to_n_valid_data(self) -> Tuple[Dict[Tuple[int, int], Set[int]], Dict[Tuple[int, int], Set[int]]]:
         '''
         Get the validation data as two dictionaries:
         - one with the pairs (s, r) as keys and a set of objects o as values

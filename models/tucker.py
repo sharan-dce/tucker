@@ -111,7 +111,7 @@ class TuckER(torch.nn.Module):
         x = self.dropouts[0](x)
         x = x.view(-1, 1, e1.size(1))
 
-        r = self.relation_embeddings(r_idx)
+        r = self.relation_embeddings(relation_index)
         W_mat = torch.mm(r, self.core_tensor.view(r.size(1), -1))
         W_mat = W_mat.view(-1, e1.size(1), e1.size(1))
         W_mat = self.dropouts[1](W_mat)
