@@ -67,7 +67,7 @@ def measure_performance(
 
         # This shouldn't be done iteratively in the ideal world
         for i, negative in enumerate(negatives):
-            rank = (output[i][negative] >= output[i][o[i]]).sum().item()
+            rank = (output[i][negative] >= output[i][o[i]]).sum().item() + 1
             mrr += 1/rank
 
             for k in hits_k.keys():
@@ -86,6 +86,7 @@ def measure_performance(
 
 def _train_step(model, data_loader, batch_loader, optimizer, desc=None):
     loss = torch.nn.BCELoss()
+    loss_avg = None
     for subject_index, relation_index in tqdm(batch_loader, desc=desc):
         optimizer.zero_grad()
         output = model(
@@ -98,7 +99,12 @@ def _train_step(model, data_loader, batch_loader, optimizer, desc=None):
         ).to(device)
         loss_val = loss(output, target=target)
         loss_val.backward()
+        if loss_avg is None:
+            loss_avg = loss_val.item()
+        else:
+            loss_avg = 0.5 * loss_avg + 0.5 * loss_val.item()
         optimizer.step()
+    print('Loss Val:', loss_avg)
 
 
 def test(model, data_loader, batch_loader):
@@ -143,12 +149,6 @@ def train(model, data_loader, epochs, lr, lr_decay, batch_size):
             desc='Epoch {}'.format(epoch)
         )
         lr_scheduler.step()
-        train_accuracy = test(
-            model=model,
-            data_loader=data_loader,
-            batch_loader=batch_loader
-        )
-        print('Train Accuracy: {}'.format(train_accuracy))
 
 
 if __name__ == '__main__':
