@@ -105,25 +105,21 @@ class TuckER(torch.nn.Module):
         self.relation_embeddings.weight.data.copy_(relation_embeddings)
 
     def forward(self, subject_index, relation_index):
-        batch_size = subject_index.shape[0]
-        core_tensor = get_gradient_masked_tensor_clone(self.core_tensor, self.gradient_mask)
-        subject = self.entity_embeddings(torch.LongTensor(subject_index).to(device))
-        relation = self.relation_embeddings(torch.LongTensor(relation_index).to(device))
-        objects = self.entity_embeddings.weight
 
-        if len(relation.shape) == 1:
-            relation = torch.unsqueeze(relation, axis=0)
-        if len(subject.shape) == 1:
-            subject = torch.unsqueeze(subject, axis=0)
+        e1 = self.entity_embeddings(subject_index)
+        x = self.batch_norms[0](e1)
+        x = self.dropouts[0](x)
+        x = x.view(-1, 1, e1.size(1))
 
-        output = tucker_multiplication(
-            core_tensor, 
-            subject, 
-            relation, 
-            objects, 
-            *self.dropouts, 
-            *self.batch_norms
-        )
-        output = torch.sigmoid(output)
-        output = torch.reshape(output, [batch_size, -1])
-        return output
+        r = self.relation_embeddings(r_idx)
+        W_mat = torch.mm(r, self.core_tensor.view(r.size(1), -1))
+        W_mat = W_mat.view(-1, e1.size(1), e1.size(1))
+        W_mat = self.dropouts[1](W_mat)
+
+        x = torch.bmm(x, W_mat) 
+        x = x.view(-1, e1.size(1))      
+        x = self.batch_norms[1](x)
+        x = self.dropouts[2](x)
+        x = torch.mm(x, self.entity_embeddings.weight.transpose(1,0))
+        pred = torch.sigmoid(x)
+        return pred
