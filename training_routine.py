@@ -149,6 +149,8 @@ def train(model, data_loader, epochs, lr, lr_decay, batch_size):
             desc='Epoch {}'.format(epoch)
         )
         lr_scheduler.step()
+        if (epoch + 1) % 3 == 0:
+            measure_performance(model, data_loader)
 
 
 if __name__ == '__main__':

@@ -62,5 +62,3 @@ if __name__ == '__main__':
         raise Exception("Model not defined!")
 
     train(model, data_loader=dl, epochs=args.num_iterations, lr=args.lr, lr_decay=0.99, batch_size=args.batch_size)
-    model.eval()
-    print(measure_performance(model, dl))
