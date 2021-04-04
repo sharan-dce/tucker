@@ -55,6 +55,7 @@ def measure_performance(
     Measure the performance of a model by computing a mean reciprocal rank and
     hits@k for each k in `ks`
     '''
+    model.eval()
     mrr = 0
     test_facts = dl.get_all_facts('test')
     hits_k = {k: 0 for k in ks}
@@ -66,7 +67,7 @@ def measure_performance(
 
         # This shouldn't be done iteratively in the ideal world
         for i, negative in enumerate(negatives):
-            rank = (output[i][negative] >= output[i][o[i]]).sum().item()
+            rank = (output[i][negative] >= output[i][o[i]]).sum().item() + 1
             mrr += 1/rank
 
             for k in hits_k.keys():
@@ -79,11 +80,20 @@ def measure_performance(
     for k in hits_k.keys():
         hits_k[k] /= len(test_facts)
 
+    model.train()
     return mrr, hits_k
 
 
-def _train_step(model, data_loader, batch_loader, optimizer, desc=None):
+def _train_step(
+    model: tucker.TuckER, 
+    data_loader, 
+    batch_loader, 
+    optimizer, 
+    label_smoothing_rate: float, 
+    desc: str=None
+    ):
     loss = torch.nn.BCELoss()
+    loss_avg = None
     for subject_index, relation_index in tqdm(batch_loader, desc=desc):
         optimizer.zero_grad()
         output = model(
@@ -94,13 +104,20 @@ def _train_step(model, data_loader, batch_loader, optimizer, desc=None):
             subject_idxs=subject_index,
             relation_idxs=relation_index
         ).to(device)
+        target = (1.0 - label_smoothing_rate) * target + label_smoothing_rate * (1.0 / target.size(1))
         loss_val = loss(output, target=target)
         loss_val.backward()
+        if loss_avg is None:
+            loss_avg = loss_val.item()
+        else:
+            loss_avg = 0.3 * loss_avg + 0.7 * loss_val.item()
         optimizer.step()
+    print('Loss Val:', loss_avg)
 
 
 def test(model, data_loader, batch_loader):
 
+    model.eval()
     total_predictions, correct_predictions = 0, 0
     for subject_index, relation_index in tqdm(batch_loader, 'Testing'):
         output = model(
@@ -116,10 +133,18 @@ def test(model, data_loader, batch_loader):
         _correct_predictions = int(_correct_predictions)
         correct_predictions += _correct_predictions
         total_predictions += len(torch.reshape(output, [-1]))
+    model.train()
     return correct_predictions / total_predictions
 
 
-def train(model, data_loader, epochs, lr, lr_decay, batch_size):
+def train(
+    model: tucker.TuckER, 
+    data_loader, 
+    epochs: int, 
+    lr: float, 
+    lr_decay: float, 
+    batch_size: int, 
+    label_smoothing_rate: float):
     optimizer = torch.optim.Adam(
         params=model.parameters(),
         lr=lr
@@ -136,15 +161,12 @@ def train(model, data_loader, epochs, lr, lr_decay, batch_size):
             data_loader=data_loader,
             batch_loader=batch_loader,
             optimizer=optimizer,
+            label_smoothing_rate=label_smoothing_rate,
             desc='Epoch {}'.format(epoch)
         )
         lr_scheduler.step()
-        train_accuracy = test(
-            model=model,
-            data_loader=data_loader,
-            batch_loader=batch_loader
-        )
-        print('Train Accuracy: {}'.format(train_accuracy))
+        if (epoch + 1) % 5 == 0:
+            print(measure_performance(model, data_loader))
 
 
 if __name__ == '__main__':
@@ -155,4 +177,4 @@ if __name__ == '__main__':
         np.random.normal(size=[200, 30, 200])
     )
 
-    train(model, data_loader=dl, epochs=2, lr=0.0001, lr_decay=0.99)
+    train(model, data_loader=dl, epochs=2, lr=0.0001, lr_decay=0.99, batch_size=4, label_smoothing_rate=0.1)

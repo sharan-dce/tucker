@@ -17,7 +17,7 @@ if __name__ == '__main__':
                     help="Number of iterations.")
     parser.add_argument("--batch_size", type=int, default=64, nargs="?",
                     help="Batch size.")
-    parser.add_argument("--lr", type=float, default=0.005, nargs="?",
+    parser.add_argument("--lr", type=float, default=0.002, nargs="?",
                     help="Learning rate.")
     parser.add_argument("--edim", type=int, default=200, nargs="?",
                     help="Entity embedding dimensionality.")
@@ -61,6 +61,4 @@ if __name__ == '__main__':
     else:
         raise Exception("Model not defined!")
 
-    train(model, data_loader=dl, epochs=args.num_iterations, lr=args.lr, lr_decay=0.99, batch_size=args.batch_size)
-    model.eval()
-    measure_performance(model, dl)
+    train(model, data_loader=dl, epochs=args.num_iterations, lr=args.lr, lr_decay=0.99, batch_size=args.batch_size, label_smoothing_rate=args.label_smoothing)
