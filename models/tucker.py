@@ -1,6 +1,8 @@
 import torch
 from typing import List
 import numpy as np
+from torch.nn.init import xavier_normal_
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -88,8 +90,10 @@ class TuckER(torch.nn.Module):
             torch.nn.BatchNorm1d(entity_embedding_dim)
         ])
 
-        self.entity_embeddings = torch.nn.Embedding(num_entities, entity_embedding_dim).to(device)
-        self.relation_embeddings = torch.nn.Embedding(num_relations, relation_embedding_dim).to(device)
+        self.entity_embeddings = torch.nn.Embedding(num_entities, entity_embedding_dim)
+        xavier_normal_(self.entity_embeddings.weight.data)
+        self.relation_embeddings = torch.nn.Embedding(num_relations, relation_embedding_dim)
+        xavier_normal_(self.relation_embeddings.weight.data)
         if initial_entity_embeddings is not None:
             self.set_entity_embeddings(initial_entity_embeddings)
         if initial_relation_embeddings is not None:
