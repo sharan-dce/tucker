@@ -1,4 +1,4 @@
-python3 train_script.py\
+python3 -u train_script.py\
     --model=tucker\
     --datapath=../data/WN18RR\
     --num_iterations=500\

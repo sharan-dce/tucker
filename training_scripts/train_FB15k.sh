@@ -1,12 +1,12 @@
-python3 train_script.py\
+python3 -u train_script.py\
     --model=tucker\
     --datapath=../data/FB15k\
     --num_iterations=500\
     --batch_size=64\
     --lr=0.003\
     --dr=0.99\
-    --edim=200\
-    --rdim=200\
+    --edim=5\
+    --rdim=3\
     --cuda=True\
     --input_dropout=0.2\
     --hidden_dropout1=0.2\
