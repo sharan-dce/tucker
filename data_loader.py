@@ -39,9 +39,18 @@ class DataLoader:
         assert(len(subject_idxs) == len(relation_idxs))
         result = torch.zeros((len(self.entities), len(subject_idxs)))
 
+        # print(self.sr_pairs, self.ro_pairs)
+        print(subject_idxs, relation_idxs)
+        print(self.sr_pairs[(subject_idxs[0].item(), relation_idxs[0].item())])
+        print(list(self.sr_pairs.keys())[:10])
+
         for i, (si, ri) in enumerate(zip(subject_idxs, relation_idxs)):
-            for v in self.sr_pairs[(si, ri)]:
+            for v in self.sr_pairs[(si.item(), ri.item())]:
                 result[v, i] = 1
+                print('missed')
+
+        print(torch.sum(result))
+        quit()
 
         return torch.transpose(result, 0, 1)
 
