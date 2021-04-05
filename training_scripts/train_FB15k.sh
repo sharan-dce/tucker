@@ -1,0 +1,14 @@
+python3 train_script.py\
+    --model=tucker\
+    --datapath=../data/FB15k\
+    --num_iterations=500\
+    --batch_size=128\
+    --lr=0.003\
+    --dr=0.99\
+    --edim=200\
+    --rdim=200\
+    --cuda=True\
+    --input_dropout=0.2\
+    --hidden_dropout1=0.2\
+    --hidden_dropout2=0.3\
+    --label_smoothing=0.0 > FB15k_training_result.txt
