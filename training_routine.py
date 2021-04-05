@@ -184,5 +184,6 @@ if __name__ == '__main__':
         lr=0.0001,
         lr_decay=0.99,
         batch_size=4,
-        label_smoothing_rate=0.1
+        label_smoothing_rate=0.1,
+        weight_decay=0
     )
