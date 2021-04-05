@@ -2,17 +2,15 @@ from typing import List, Dict, Tuple, Set
 from collections import defaultdict
 import torch
 
-DATA_FOLDER = 'data'
-
 
 class DataLoader:
-    def __init__(self, dataset: str, add_reverses: bool = True) -> None:
+    def __init__(self, datapath: str, add_reverses: bool = True) -> None:
         self.data = {}
 
         dsets = ['train', 'valid', 'test']
 
         for dset in dsets:
-            with open(f'{DATA_FOLDER}/{dataset}/{dset}.txt') as f:
+            with open(f'{datapath}/{dset}.txt') as f:
                 dset_data = list(map(str.split, f.read().strip().split('\n')))
 
                 if add_reverses:

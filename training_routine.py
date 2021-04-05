@@ -170,7 +170,7 @@ def train(
 
 
 if __name__ == '__main__':
-    dl = data_loader.DataLoader('FB15k')
+    dl = data_loader.DataLoader('data/FB15k')
     model = tucker.TuckER(
         len(dl.entities),
         len(dl.relations),
