@@ -33,8 +33,8 @@ tensor([[1.3786e-02, 9.9045e-01, 2.6718e-02, 1.1845e-01, 7.9078e-01, 9.9812e-01,
 
 #### work on normal server
 ```
-cd tucker
-python3 train_script.py --model tucker --dataset FB15k
+cd tucker/training_scripts
+bash train_FB15k.sh
 ```
 
 #### work on Colab
@@ -42,8 +42,8 @@ First open a new session with GPU
 
 ```
 !git clone https://github.com/sharan-dce/tucker.git
-%cd tucker
-!python3 train_script.py --model tucker --dataset FB15k
+%cd tucker/training_scripts
+!bash train_FB15k.sh
 ```
 
 ## Using TuckER to implement other knowledge-graph completion algorithms

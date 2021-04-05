@@ -4,20 +4,22 @@ import numpy as np
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-def batched_tensorvectormul(x, y, axis):
-    '''
-    x: tensor of shape b x * x d x * where * denotes any dimensions in between
-    y: matrix of shape b x d
-    '''
-    assert(len(y.shape) == 2)
-    assert(axis in range(1, len(x.shape)))
-    assert(x.shape[0] == y.shape[0])
-    assert(x.shape[axis] == y.shape[1])
-    y_new_shape = [x_dim if ax == axis or ax == 0 else 1 for ax, x_dim in enumerate(x.shape)]
-    y = torch.reshape(input=y, shape=y_new_shape)
-    broadcasted_hadamard = x * y
-    product = torch.sum(broadcasted_hadamard, axis=axis)
-    return product
+
+# def batched_tensorvectormul(x, y, axis):
+#     '''
+#     x: tensor of shape b x * x d x * where * denotes any dimensions in between
+#     y: matrix of shape b x d
+#     '''
+#     assert(len(y.shape) == 2)
+#     assert(axis in range(1, len(x.shape)))
+#     assert(x.shape[0] == y.shape[0])
+#     assert(x.shape[axis] == y.shape[1])
+#     y_new_shape = [x_dim if ax == axis or ax == 0 else 1 for ax, x_dim in enumerate(x.shape)]
+#     y = torch.reshape(input=y, shape=y_new_shape)
+#     broadcasted_hadamard = x * y
+#     product = torch.sum(broadcasted_hadamard, axis=axis)
+#     return product
+
 
 def get_gradient_masked_tensor_clone(tensor, grad_mask):
     '''
@@ -32,8 +34,7 @@ def get_gradient_masked_tensor_clone(tensor, grad_mask):
 def tucker_multiplication(
     core, s, r, o,
     d1: torch.nn.Dropout, d2: torch.nn.Dropout, d3: torch.nn.Dropout,
-    b1: torch.nn.BatchNorm1d, b2: torch.nn.BatchNorm1d
-    ):
+    b1: torch.nn.BatchNorm1d, b2: torch.nn.BatchNorm1d):
     '''
     core of shape e x r x e
     s of shape b x e
@@ -41,26 +42,21 @@ def tucker_multiplication(
     o of shape n x e
     b refers to the batch size, and n the number of objects
     '''
-    assert(len(s.shape) == 2 and len(r.shape) == 2 and len(o.shape) == 2)
-    assert(len(core.shape) == 3)
-    assert(s.shape[0] == r.shape[0])
-    assert(o.shape[1] == s.shape[1])
-    assert(list(core.shape) == [s.shape[1], r.shape[1], o.shape[1]])
 
-    batch_size = s.shape[0]
+    x = b1(s)
+    x = d1(x)
+    x = x.view(-1, 1, s.size(1))
 
-    core = torch.unsqueeze(core, axis=0).repeat([batch_size, 1, 1, 1])
+    core_mat = torch.mm(r, core.view(r.size(1), -1))
+    core_mat = core_mat.view(-1, s.size(1), s.size(1))
+    core_mat = d2(core_mat)
 
-    s = b1(s)
-    s = d1(s)
-    output = batched_tensorvectormul(x=core, y=r, axis=2)
-    output = d2(output)
-    output = batched_tensorvectormul(x=output, y=s, axis=1)
-    output = b2(output)
-    output = d3(output)
-    output = torch.matmul(output, torch.transpose(input=o, dim0=0, dim1=1))
-
-    return output
+    x = torch.bmm(x, core_mat)
+    x = x.view(-1, s.size(1))
+    x = b2(x)
+    x = d3(x)
+    x = torch.mm(x, o.transpose(1, 0))
+    return x
 
 
 class TuckER(torch.nn.Module):
@@ -88,8 +84,8 @@ class TuckER(torch.nn.Module):
 
         self.dropouts = torch.nn.ModuleList([torch.nn.Dropout(d) for d in [d1, d2, d3]])
         self.batch_norms = torch.nn.ModuleList([
-            torch.nn.BatchNorm1d(entity_embedding_dim).to(device),
-            torch.nn.BatchNorm1d(entity_embedding_dim).to(device)
+            torch.nn.BatchNorm1d(entity_embedding_dim),
+            torch.nn.BatchNorm1d(entity_embedding_dim)
         ])
 
         self.entity_embeddings = torch.nn.Embedding(num_entities, entity_embedding_dim).to(device)

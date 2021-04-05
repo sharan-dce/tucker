@@ -2,7 +2,7 @@ python3 train_script.py\
     --model=tucker\
     --datapath=../data/FB15k\
     --num_iterations=500\
-    --batch_size=128\
+    --batch_size=64\
     --lr=0.003\
     --dr=0.99\
     --edim=200\
