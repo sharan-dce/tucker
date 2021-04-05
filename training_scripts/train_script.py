@@ -49,21 +49,30 @@ if __name__ == '__main__':
         model = tucker.TuckER(
             len(dl.entities),
             len(dl.relations),
-            np.random.normal(size=[args.edim, args.rdim, args.edim])
+            np.random.normal(size=[args.edim, args.rdim, args.edim]),
+            d1=args.input_dropout,
+            d2=args.hidden_dropout1,
+            d3=args.hidden_dropout2
         ).to(device)
     elif args.model == 'rescal':
         from models import rescal
         model = rescal.RESCAL(
             len(dl.entities),
             len(dl.relations),
-            args.edim
+            args.edim,
+            d1=args.input_dropout,
+            d2=args.hidden_dropout1,
+            d3=args.hidden_dropout2
         ).to(device)
     elif args.model == 'distmult':
         from models import distmult
         model = distmult.DistMult(
             len(dl.entities),
             len(dl.relations),
-            args.edim
+            args.edim,
+            d1=args.input_dropout,
+            d2=args.hidden_dropout1,
+            d3=args.hidden_dropout2
         ).to(device)
     else:
         raise Exception("Model not defined!")
