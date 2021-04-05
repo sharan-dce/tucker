@@ -1,0 +1,14 @@
+python3 train_script.py\
+    --model=tucker\
+    --datapath=../data/WN18RR\
+    --num_iterations=500\
+    --batch_size=128\
+    --lr=0.01\
+    --dr=1.0\
+    --edim=200\
+    --rdim=30\
+    --cuda=True\
+    --input_dropout=0.2\
+    --hidden_dropout1=0.2\
+    --hidden_dropout2=0.3\
+    --label_smoothing=0.1 > WN18RR_training_result.txt

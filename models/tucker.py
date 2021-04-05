@@ -82,12 +82,15 @@ class TuckER(torch.nn.Module):
         entity_embedding_dim, relation_embedding_dim = initial_tensor.shape[: 2]
         self.gradient_mask = torch.tensor(gradient_mask.astype(np.float32), requires_grad=False).to(device)
         self.core_tensor = torch.nn.Parameter(
-                                        torch.tensor(initial_tensor.astype(np.float32)), 
+                                        torch.tensor(initial_tensor.astype(np.float32)).to(device),
                                         requires_grad=True
                                     )
 
         self.dropouts = torch.nn.ModuleList([torch.nn.Dropout(d) for d in [d1, d2, d3]])
-        self.batch_norms = torch.nn.ModuleList([torch.nn.BatchNorm1d(entity_embedding_dim), torch.nn.BatchNorm1d(entity_embedding_dim)])
+        self.batch_norms = torch.nn.ModuleList([
+            torch.nn.BatchNorm1d(entity_embedding_dim).to(device),
+            torch.nn.BatchNorm1d(entity_embedding_dim).to(device)
+        ])
 
         self.entity_embeddings = torch.nn.Embedding(num_entities, entity_embedding_dim).to(device)
         self.relation_embeddings = torch.nn.Embedding(num_relations, relation_embedding_dim).to(device)

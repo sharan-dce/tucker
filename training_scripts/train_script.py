@@ -11,14 +11,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", type=str, default="tucker", nargs="?",
                         help="Which model to use: tucker, distmult or rescal.")
-    parser.add_argument("--dataset", type=str, default="FB15k", nargs="?",
-                    help="Which dataset to use: FB15k, FB15k-237, WN18 or WN18RR.")
+    parser.add_argument("--datapath", type=str, default="data/FB15k", nargs="?",
+                    help="The path to the data directory. The directory should have 3 files:"
+                         "train.txt   valid.txt   test.txt")
     parser.add_argument("--num_iterations", type=int, default=20, nargs="?",
                     help="Number of iterations.")
     parser.add_argument("--batch_size", type=int, default=64, nargs="?",
                     help="Batch size.")
     parser.add_argument("--lr", type=float, default=0.002, nargs="?",
                     help="Learning rate.")
+    parser.add_argument("--dr", type=float, default=0.99, nargs="?",
+                    help="Learning rate decay.")
     parser.add_argument("--edim", type=int, default=200, nargs="?",
                     help="Entity embedding dimensionality.")
     parser.add_argument("--rdim", type=int, default=200, nargs="?",
@@ -33,9 +36,11 @@ if __name__ == '__main__':
                     help="Dropout after the second hidden layer.")
     parser.add_argument("--label_smoothing", type=float, default=0.1, nargs="?",
                     help="Amount of label smoothing.")
+    parser.add_argument("--weight_decay", type=float, default=0.0, nargs="?",
+                    help="Weight decay for the optimizer.")
 
     args = parser.parse_args()
-    dl = data_loader.DataLoader(args.dataset)
+    dl = data_loader.DataLoader(args.datapath)
 
     if args.model == 'tucker':
         from models import tucker
@@ -61,4 +66,13 @@ if __name__ == '__main__':
     else:
         raise Exception("Model not defined!")
 
-    train(model, data_loader=dl, epochs=args.num_iterations, lr=args.lr, lr_decay=0.99, batch_size=args.batch_size, label_smoothing_rate=args.label_smoothing)
+    train(
+        model,
+        data_loader=dl,
+        epochs=args.num_iterations,
+        lr=args.lr,
+        lr_decay=args.dr,
+        batch_size=args.batch_size,
+        label_smoothing_rate=args.label_smoothing,
+        weight_decay=args.weight_decay
+    )

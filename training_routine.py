@@ -85,13 +85,12 @@ def measure_performance(
 
 
 def _train_step(
-    model: tucker.TuckER, 
-    data_loader, 
-    batch_loader, 
-    optimizer, 
-    label_smoothing_rate: float, 
-    desc: str=None
-    ):
+        model: tucker.TuckER, 
+        data_loader, 
+        batch_loader, 
+        optimizer, 
+        label_smoothing_rate: float, 
+        desc: str=None):
     loss = torch.nn.BCELoss()
     loss_avg = None
     for subject_index, relation_index in tqdm(batch_loader, desc=desc):
@@ -116,7 +115,6 @@ def _train_step(
 
 
 def test(model, data_loader, batch_loader):
-
     model.eval()
     total_predictions, correct_predictions = 0, 0
     for subject_index, relation_index in tqdm(batch_loader, 'Testing'):
@@ -138,16 +136,18 @@ def test(model, data_loader, batch_loader):
 
 
 def train(
-    model: tucker.TuckER, 
-    data_loader, 
-    epochs: int, 
-    lr: float, 
-    lr_decay: float, 
-    batch_size: int, 
-    label_smoothing_rate: float):
+        model: tucker.TuckER, 
+        data_loader, 
+        epochs: int, 
+        lr: float, 
+        lr_decay: float, 
+        batch_size: int, 
+        label_smoothing_rate: float,
+        weight_decay: float):
     optimizer = torch.optim.Adam(
         params=model.parameters(),
-        lr=lr
+        lr=lr,
+        weight_decay=weight_decay
     )
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
         optimizer=optimizer,
@@ -170,11 +170,20 @@ def train(
 
 
 if __name__ == '__main__':
-    dl = data_loader.DataLoader('FB15k')
+    dl = data_loader.DataLoader('data/FB15k')
     model = tucker.TuckER(
         len(dl.entities),
         len(dl.relations),
         np.random.normal(size=[200, 30, 200])
     )
 
-    train(model, data_loader=dl, epochs=2, lr=0.0001, lr_decay=0.99, batch_size=4, label_smoothing_rate=0.1)
+    train(
+        model,
+        data_loader=dl,
+        epochs=2,
+        lr=0.0001,
+        lr_decay=0.99,
+        batch_size=4,
+        label_smoothing_rate=0.1,
+        weight_decay=0
+    )
