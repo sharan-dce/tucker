@@ -22,9 +22,20 @@ def generate_negative_objects_for_triple(
     '''
     Given a fact (s, r, o), return all the objects o' such that the triple (s,
     r, o') is not in the training set
+    
+    Returns a boolean vector of length `len(dl.entities)` with 1s where the
+    negative objects are.
     '''
-    negative = [dl.entity_to_idx[e] for e in dl.entities if dl.entity_to_idx[e] not in dl.sr_pairs[(s_idx, r_idx)]]
-    return torch.LongTensor(negative)
+    negative = set(dl.entity_to_idx.values())
+
+    for o in dl.sr_pairs[(s_idx, r_idx)]:
+        negative.remove(o)
+
+    negative.remove(o_idx)
+
+    result = torch.zeros(len(dl.entities)).type(torch.BoolTensor).to(device)
+    result.scatter_(0, torch.LongTensor(list(negative)).to(device), 1)
+    return result
 
 
 def generate_negative_objects(
@@ -44,12 +55,13 @@ def generate_negative_objects(
 
         result.append(generate_negative_objects_for_triple(dl, s, r, o))
 
-    return result
+    return torch.stack(result)
 
 
 def measure_performance(
         model: tucker.TuckER,
         dl: DataLoader,
+        batch_size: int,
         ks: List[int] = [1, 3, 10]) -> Tuple[int, dict]:
     '''
     Measure the performance of a model by computing a mean reciprocal rank and
@@ -59,20 +71,17 @@ def measure_performance(
     mrr = 0
     test_facts = dl.get_all_facts('test')
     hits_k = {k: 0 for k in ks}
-    batch_test_loader = torch.utils.data.DataLoader(test_facts, batch_size=100)
+    batch_test_loader = torch.utils.data.DataLoader(test_facts, batch_size=batch_size)
 
     for s, r, o in tqdm(batch_test_loader, 'Measuring performance'):
         output = model(s, r)
         negatives = generate_negative_objects(dl, s, r, o)
 
-        # This shouldn't be done iteratively in the ideal world
-        for i, negative in enumerate(negatives):
-            rank = (output[i][negative] >= output[i][o[i]]).sum().item() + 1
-            mrr += 1/rank
+        ranks = ((negatives * output) >= torch.gather(output, 1, o.unsqueeze(1).to(device))).sum(dim=1) + 1
+        mrr += (1/ranks).sum().item()
 
-            for k in hits_k.keys():
-                if rank <= k:
-                    hits_k[k] += 1
+        for k in hits_k.keys():
+            hits_k[k] += (ranks <= k).sum().item()
 
     # normalise
     mrr /= len(test_facts)
@@ -138,7 +147,7 @@ def train(
         epochs: int, 
         lr: float, 
         lr_decay: float, 
-        batch_size: int, 
+        batch_size: int,
         label_smoothing_rate: float,
         weight_decay: float):
     optimizer = torch.optim.Adam(
@@ -163,7 +172,7 @@ def train(
         )
         lr_scheduler.step()
         if (epoch + 1) % 10 == 0:
-            print(measure_performance(model, data_loader))
+            print(measure_performance(model, data_loader, batch_size))
 
 
 if __name__ == '__main__':
@@ -172,7 +181,7 @@ if __name__ == '__main__':
         len(dl.entities),
         len(dl.relations),
         np.random.normal(size=[200, 30, 200])
-    )
+    ).to(device)
 
     train(
         model,
