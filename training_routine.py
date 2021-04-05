@@ -92,7 +92,7 @@ def _train_step(
         label_smoothing_rate: float, 
         desc: str=None):
     loss = torch.nn.BCELoss()
-    loss_avg = None
+    loss_avg = 0
     for subject_index, relation_index in tqdm(batch_loader, desc=desc):
         optimizer.zero_grad()
         output = model(
@@ -106,10 +106,7 @@ def _train_step(
         target = (1.0 - label_smoothing_rate) * target + label_smoothing_rate * (1.0 / target.size(1))
         loss_val = loss(output, target=target)
         loss_val.backward()
-        if loss_avg is None:
-            loss_avg = loss_val.item()
-        else:
-            loss_avg = 0.3 * loss_avg + 0.7 * loss_val.item()
+        loss_avg += loss_val.item()
         optimizer.step()
     print('Loss Val:', loss_avg)
 
@@ -165,7 +162,7 @@ def train(
             desc='Epoch {}'.format(epoch)
         )
         lr_scheduler.step()
-        if (epoch + 1) % 5 == 0:
+        if (epoch + 1) % 10 == 0:
             print(measure_performance(model, data_loader))
 
 

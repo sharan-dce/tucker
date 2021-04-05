@@ -1,4 +1,6 @@
 import argparse
+import sys
+sys.path.insert(0, '../')
 import data_loader
 import numpy as np
 from training_routine import train, measure_performance
