@@ -144,10 +144,12 @@ def train(
     lr: float, 
     lr_decay: float, 
     batch_size: int, 
-    label_smoothing_rate: float):
+    label_smoothing_rate: float,
+    weight_decay: float):
     optimizer = torch.optim.Adam(
         params=model.parameters(),
-        lr=lr
+        lr=lr,
+        weight_decay=weight_decay
     )
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(
         optimizer=optimizer,

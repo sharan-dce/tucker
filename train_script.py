@@ -33,6 +33,8 @@ if __name__ == '__main__':
                     help="Dropout after the second hidden layer.")
     parser.add_argument("--label_smoothing", type=float, default=0.1, nargs="?",
                     help="Amount of label smoothing.")
+    parser.add_argument("--weight_decay", type=float, default=0.0, nargs="?",
+                    help="Weight decay for the optimizer.")
 
     args = parser.parse_args()
     dl = data_loader.DataLoader(args.dataset)
@@ -61,4 +63,13 @@ if __name__ == '__main__':
     else:
         raise Exception("Model not defined!")
 
-    train(model, data_loader=dl, epochs=args.num_iterations, lr=args.lr, lr_decay=0.99, batch_size=args.batch_size, label_smoothing_rate=args.label_smoothing)
+    train(
+        model,
+        data_loader=dl,
+        epochs=args.num_iterations,
+        lr=args.lr,
+        lr_decay=0.99,
+        batch_size=args.batch_size,
+        label_smoothing_rate=args.label_smoothing,
+        weight_decay=args.weight_decay
+    )
