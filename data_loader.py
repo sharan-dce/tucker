@@ -40,7 +40,7 @@ class DataLoader:
         result = torch.zeros((len(self.entities), len(subject_idxs)))
 
         for i, (si, ri) in enumerate(zip(subject_idxs, relation_idxs)):
-            for v in self.sr_pairs[(si, ri)]:
+            for v in self.sr_pairs[(si.item(), ri.item())]:
                 result[v, i] = 1
 
         return torch.transpose(result, 0, 1)
@@ -57,7 +57,7 @@ class DataLoader:
         '''
         return self.sr_pairs, self.ro_pairs
 
-    def get_1_to_n_valid_data(self) -> Tuple[Dict[Tuple[int, int, Set[int]]], Dict[Tuple[int, int], Set[int]]]:
+    def get_1_to_n_valid_data(self) -> Tuple[Dict[Tuple[int, int], Set[int]], Dict[Tuple[int, int], Set[int]]]:
         '''
         Get the validation data as two dictionaries:
         - one with the pairs (s, r) as keys and a set of objects o as values
