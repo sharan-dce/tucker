@@ -160,7 +160,7 @@ def train(
         gamma=lr_decay
     )
     sl = data_loader.get_1_to_n_train_data()[0]
-    batch_loader = torch.utils.data.DataLoader(list(sl.keys()), batch_size=batch_size)
+    batch_loader = torch.utils.data.DataLoader(list(sl.keys()), batch_size=batch_size, shuffle=True)
     for epoch in range(epochs):
         _train_step(
             model=model,
