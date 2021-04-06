@@ -14,46 +14,46 @@ def unzip(x):
     return list(x)
 
 
-def generate_negative_objects_for_triple(
+def generate_positive_objects_for_triple(
         dl: DataLoader,
         s_idx: int,
         r_idx: int,
         o_idx: int) -> torch.LongTensor:
     '''
     Given a fact (s, r, o), return all the objects o' such that the triple (s,
-    r, o') is not in the training set
+    r, o') is in the training set along o itself
     
     Returns a boolean vector of length `len(dl.entities)` with 1s where the
-    negative objects are.
+    positive objects are.
     '''
-    negative = set(dl.entity_to_idx.values())
+    positive = set()
 
     for o in dl.sr_pairs[(s_idx, r_idx)]:
-        negative.remove(o)
+        positive.add(o)
 
-    negative.remove(o_idx)
+    positive.add(o_idx)
 
     result = torch.zeros(len(dl.entities)).type(torch.BoolTensor).to(device)
-    result.scatter_(0, torch.LongTensor(list(negative)).to(device), 1)
+    result.scatter_(0, torch.LongTensor(list(positive)).to(device), 1)
     return result
 
 
-def generate_negative_objects(
+def generate_positive_objects(
         dl: DataLoader,
         s_idxs: torch.Tensor,
         r_idxs: torch.Tensor,
         o_idxs: torch.Tensor) -> List[torch.LongTensor]:
     '''
     Given a tensor of facts (s, r, o), for each fact return all the objects o'
-    such that (s, r, o') is not present in the training dataset (i.e. negative
-    facts)
+    such that (s, r, o') is present in the training dataset (i.e. positive
+    facts) along with o itself
     '''
     result = []
 
     for i in range(len(s_idxs)):
         s, r, o = s_idxs[i].item(), r_idxs[i].item(), o_idxs[i].item()
 
-        result.append(generate_negative_objects_for_triple(dl, s, r, o))
+        result.append(generate_positive_objects_for_triple(dl, s, r, o))
 
     return torch.stack(result)
 
@@ -75,9 +75,9 @@ def measure_performance(
 
     for s, r, o in tqdm(batch_test_loader, 'Measuring performance'):
         output = model(s, r)
-        negatives = generate_negative_objects(dl, s, r, o)
+        positives = generate_positive_objects(dl, s, r, o)
 
-        ranks = ((negatives * output) >= torch.gather(output, 1, o.unsqueeze(1).to(device))).sum(dim=1) + 1
+        ranks = (((~positives) * output) >= torch.gather(output, 1, o.unsqueeze(1).to(device))).sum(dim=1) + 1
         mrr += (1/ranks).sum().item()
 
         for k in hits_k.keys():
