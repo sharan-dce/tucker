@@ -152,13 +152,13 @@ class DataLoader:
 
     def _determine_entity_mapping(self) -> None:
         '''
-        Map entities to indices from 1 to len(self.entities) - 1
+        Map entities to indices from 0 to len(self.entities) - 1
         '''
         self.entity_to_idx = {e: i for i, e in enumerate(sorted(self.entities))}
 
     def _determine_relation_mapping(self) -> None:
         '''
-        Map relations to indices from 1 to len(self.relations) - 1
+        Map relations to indices from 0 to len(self.relations) - 1
         '''
         self.relation_to_idx = {r: i for i, r in enumerate(sorted(self.relations))}
 
