@@ -6,23 +6,6 @@ from torch.nn.init import xavier_normal_
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-# def batched_tensorvectormul(x, y, axis):
-#     '''
-#     x: tensor of shape b x * x d x * where * denotes any dimensions in between
-#     y: matrix of shape b x d
-#     '''
-#     assert(len(y.shape) == 2)
-#     assert(axis in range(1, len(x.shape)))
-#     assert(x.shape[0] == y.shape[0])
-#     assert(x.shape[axis] == y.shape[1])
-#     y_new_shape = [x_dim if ax == axis or ax == 0 else 1 for ax, x_dim in enumerate(x.shape)]
-#     y = torch.reshape(input=y, shape=y_new_shape)
-#     broadcasted_hadamard = x * y
-#     product = torch.sum(broadcasted_hadamard, axis=axis)
-#     return product
-
-
 def get_gradient_masked_tensor_clone(tensor, grad_mask):
     '''
     Creates a copy of 'tensor' that sends non zero gradients only at areas marked as '1' in 'grad_mask'
@@ -87,8 +70,8 @@ class TuckER(torch.nn.Module):
     
 
     def forward(self, subject_index, relation_index):
-        e1_idx = subject_index
-        r_idx = relation_index
+        e1_idx = subject_index.to(device)
+        r_idx = relation_index.to(device)
         e1 = self.E(e1_idx)
         x = self.bn0(e1)
         x = self.input_dropout(x)
