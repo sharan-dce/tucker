@@ -49,7 +49,7 @@ def tucker_multiplication(
     x = d1(x)
     x = x.view(-1, 1, s.size(1))
 
-    core_mat = torch.mm(r, core.view(r.size(1), -1))
+    core_mat = torch.mm(r, core.contiguous().view(r.size(-1), -1))
     core_mat = core_mat.view(-1, s.size(1), s.size(1))
     core_mat = d2(core_mat)
 
@@ -63,7 +63,7 @@ def tucker_multiplication(
 
 class TuckER(torch.nn.Module):
     def __init__(
-            self, 
+            self,
             num_entities: int,
             num_relations: int,
             initial_tensor,
@@ -78,6 +78,10 @@ class TuckER(torch.nn.Module):
         super(TuckER, self).__init__()
         assert(initial_tensor.shape == gradient_mask.shape)
         entity_embedding_dim, relation_embedding_dim = initial_tensor.shape[: 2]
+        # take care of swapping axes to get the multiplicaiton right
+        initial_tensor = np.swapaxes(initial_tensor, 0, 1)
+        gradient_mask = np.swapaxes(gradient_mask, 0, 1)
+
         self.gradient_mask = torch.tensor(gradient_mask.astype(np.float32), requires_grad=False).to(device)
         self.core_tensor = torch.nn.Parameter(
                                         torch.tensor(initial_tensor.astype(np.float32)).to(device),

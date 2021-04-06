@@ -2,11 +2,11 @@ python3 -u train_script.py\
     --model=tucker\
     --datapath=../data/FB15k-237\
     --num_iterations=500\
-    --batch_size=128\
+    --batch_size=4\
     --lr=0.0005\
     --dr=1.0\
-    --edim=200\
-    --rdim=200\
+    --edim=17\
+    --rdim=19\
     --cuda=True\
     --input_dropout=0.3\
     --hidden_dropout1=0.4\
