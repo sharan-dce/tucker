@@ -18,12 +18,10 @@ class DataLoader:
 
                 self.data[dset] = dset_data
 
-        self.entities = self._get_entities()
-        self.relations = self._get_relations()
-        self.entity_to_idx = {}
-        self.relation_to_idx = {}
-        self._determine_entity_mapping()
-        self._determine_relation_mapping()
+        self.entities = list(self._get_entities())
+        self.relations = list(self._get_relations())
+        self.entity_to_idx = dict([(y, x) for (x, y) in enumerate(self.entities)])
+        self.relation_to_idx = dict([(y, x) for (x, y) in enumerate(self.relations)])
         self.sr_pairs, self.ro_pairs = self._determine_1_to_n_train_data()
 
     def get_y(self, subject_idxs: List[int], relation_idxs: List[int]) -> torch.Tensor:
@@ -149,19 +147,6 @@ class DataLoader:
             relations.update(set([r for _, r, _ in d]))
 
         return relations
-
-    def _determine_entity_mapping(self) -> None:
-        '''
-        Map entities to indices from 0 to len(self.entities) - 1
-        '''
-        self.entity_to_idx = {e: i for i, e in enumerate(sorted(self.entities))}
-
-    def _determine_relation_mapping(self) -> None:
-        '''
-        Map relations to indices from 0 to len(self.relations) - 1
-        '''
-        self.relation_to_idx = {r: i for i, r in enumerate(sorted(self.relations))}
-
 
 class DataLoaderException(Exception):
     pass
