@@ -116,6 +116,9 @@ def _train_step(
         loss_val = loss(output, target=target)
         loss_val.backward()
         loss_avg += loss_val.item()
+        for param in model.parameters():
+            if torch.sum(param.grad) == 0.0:
+                print('warning bhaiya')
         optimizer.step()
     print('Loss Val:', loss_avg)
 
