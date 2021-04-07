@@ -115,7 +115,6 @@ class Experiment:
         )
         if self.cuda:
             model.cuda()
-        model.init()
         opt = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
         if self.decay_rate:
             scheduler = ExponentialLR(opt, self.decay_rate)

@@ -27,12 +27,11 @@ class TuckER(torch.nn.Module):
         # get batch norms and dropouts
         self.batch_norms = torch.nn.ModuleList([torch.nn.BatchNorm1d(dim) for dim in [self.edim, self.edim]])
         self.dropouts = torch.nn.ModuleList([torch.nn.Dropout(drop_prob) for drop_prob in [d1, d2, d3]])
+
+        xavier_normal_(self.entity_embeddings.weight.data)
+        xavier_normal_(self.relation_embeddings.weight.data)
         
 
-    def init(self):
-        xavier_normal_(self.E.weight.data)
-        xavier_normal_(self.R.weight.data)
-    
     def _process_entities(self, entities):
         # batch norm first on entity embeddings
         entities = self.batch_norms[0](entities)
