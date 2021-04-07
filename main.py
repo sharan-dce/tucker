@@ -121,6 +121,7 @@ class Experiment:
 
         er_vocab = self.get_er_vocab(train_data_idxs)
         er_vocab_pairs = list(er_vocab.keys())
+        bce_loss = torch.nn.BCELoss()
 
         print("Starting training...")
         for it in range(1, self.num_iterations+1):
@@ -139,7 +140,7 @@ class Experiment:
                 predictions = model.forward(e1_idx, r_idx)
                 if self.label_smoothing:
                     targets = ((1.0-self.label_smoothing)*targets) + (1.0/targets.size(1))           
-                loss = model.loss(predictions, targets)
+                loss = bce_loss(predictions, targets)
                 loss.backward()
                 opt.step()
                 losses.append(loss.item())
