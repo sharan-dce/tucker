@@ -39,7 +39,7 @@ class Experiment:
         
         for i in range(0, len(test_data_idxs), self.batch_size):
             er_pairs = test_data_idxs[i: i + self.batch_size]
-            data_batch, _ = d.get_batch(er_vocab, test_data_idxs)
+            data_batch, _ = d.get_batch(er_vocab, er_pairs)
             e1_idx = torch.tensor(data_batch[:,0])
             r_idx = torch.tensor(data_batch[:,1])
             e2_idx = torch.tensor(data_batch[:,2])
