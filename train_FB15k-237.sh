@@ -10,16 +10,15 @@ module load gpu/cudnn/7.6.5__cuda-10.1
 
 source activate sneaky_env
 
-python3 -u train_script.py\
+python3 -u main.py\
     --model=tucker\
-    --datapath=../data/FB15k-237\
+    --dataset=FB15k-237\
     --num_iterations=600\
     --batch_size=128\
     --lr=0.0005\
     --dr=1.0\
     --edim=200\
     --rdim=200\
-    --cuda=True\
     --input_dropout=0.3\
     --hidden_dropout1=0.4\
     --hidden_dropout2=0.5\

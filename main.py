@@ -173,7 +173,7 @@ if __name__ == '__main__':
         model = tucker.TuckER(
             len(d.entities),
             len(d.relations),
-            np.random.normal(size=[args.edim, args.rdim, args.edim]),
+            np.random.normal(size=[args.rdim, args.edim, args.edim]),
             d1=args.input_dropout,
             d2=args.hidden_dropout1,
             d3=args.hidden_dropout2

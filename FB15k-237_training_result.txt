@@ -1,0 +1,14 @@
+Script arguments:  Namespace(batch_size=128, dataset='FB15k-237', dr=1.0, edim=200, hidden_dropout1=0.4, hidden_dropout2=0.5, input_dropout=0.3, label_smoothing=0.1, lr=0.0005, model='tucker', num_iterations=600, rdim=200)
+Training the TuckER model...
+Number of training data points: 544230
+Starting training...
+1
+14.093981266021729
+0.26791618905452075
+Validation:
+Number of data points: 35070
+Hits @10: 0.02475049900199601
+Hits @3: 0.012517821499857428
+Hits @1: 0.006130595950955232
+Mean rank: 6341.790590248075
+Mean reciprocal rank: 0.012335874736844858

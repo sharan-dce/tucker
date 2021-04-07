@@ -1,3 +1,4 @@
+#!/bin/sh
 
 sbatch -n1 train_FB15k-237.sh  
 sbatch -n1 train_FB15k.sh      
