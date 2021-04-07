@@ -24,7 +24,7 @@ class DataLoader:
         self.relation_to_idx = {}
         self._determine_entity_mapping()
         self._determine_relation_mapping()
-        self.sr_pairs, self.ro_pairs = self._determine_1_to_n_train_data()
+        self.sr_pairs = self._determine_1_to_n_data()
 
     def get_y(self, subject_idxs: List[int], relation_idxs: List[int]) -> torch.Tensor:
         '''
@@ -38,65 +38,37 @@ class DataLoader:
         result = torch.zeros((len(self.entities), len(subject_idxs)))
 
         for i, (si, ri) in enumerate(zip(subject_idxs, relation_idxs)):
-            for v in self.sr_pairs[(si.item(), ri.item())]:
+            for v in self.sr_pairs['train'][(si.item(), ri.item())]:
                 result[v, i] = 1
 
         return torch.transpose(result, 0, 1)
 
-    def get_1_to_n_train_data(self) -> Tuple[Dict[Tuple[int, int], Set[int]], Dict[Tuple[int, int], Set[int]]]:
+    def get_1_to_n_data(self) -> Dict[str, Dict[Tuple[int, int], Set[int]]]:
         '''
-        Get the training data as two dictionaries:
-        - one with the pairs (s, r) as keys and a set of objects o as values
-          such that facts (s, r, o) are in the dataset
-        - the other with the pairs (r, o) as keys and a set of objects s as
-          values such that facts (s, r, o) are in the dataset
+        Get the data as a dictionary for each of train, valid and test datasets
+        with the pairs (s, r) as keys and a set of objects o as values such that
+        facts (s, r, o) are in the respective dataset.
 
         This function returns the indices of the entities and relations
         '''
-        return self.sr_pairs, self.ro_pairs
+        return self.sr_pairs
 
-    def get_1_to_n_valid_data(self) -> Tuple[Dict[Tuple[int, int], Set[int]], Dict[Tuple[int, int], Set[int]]]:
+    def _determine_1_to_n_data(self) -> Dict[str, Dict[Tuple[int, int], Set[int]]]:
         '''
-        Get the validation data as two dictionaries:
-        - one with the pairs (s, r) as keys and a set of objects o as values
-          such that facts (s, r, o) are in the dataset
-        - the other with the pairs (r, o) as keys and a set of objects s as
-          values such that facts (s, r, o) are in the dataset
+        Reorganise the data as a dictionary for each of train, valid and test
+        datasets with the pairs (s, r) as keys and a set of objects o as values
+        such that facts (s, r, o) are in the respective dataset.
 
         This function returns the indices of the entities and relations
         '''
-        sr_pairs = defaultdict(set)
-        ro_pairs = defaultdict(set)
+        for dset_name, dset in self.data:
+            for s, r, o in dset:
+                s_idx = self.entity_to_idx[s]
+                r_idx = self.relation_to_idx[r]
+                o_idx = self.entity_to_idx[o]
+                sr_pairs[dset_name][(s_idx, r_idx)].add(o_idx)
 
-        for s, r, o in self.data['valid']:
-            s_idx = self.entity_to_idx[s]
-            r_idx = self.relation_to_idx[r]
-            o_idx = self.entity_to_idx[o]
-            sr_pairs[(s_idx, r_idx)].add(o_idx)
-            ro_pairs[(r_idx, o_idx)].add(s_idx)
-
-        return sr_pairs, ro_pairs
-
-    def _determine_1_to_n_train_data(self) -> Tuple[Dict[Tuple[int, int], Set[int]], Dict[Tuple[int, int], Set[int]]]:
-        '''
-        Reorganise the training data such that for all pairs (s, r) of a
-        subject and a relation (respectively (r, o) of a relation and an
-        object) we have a set of objects (respectively subjects) such that the
-        triple (s, r, o) makes a true fact in the dataset.
-
-        This function returns the indices of the entities and relations
-        '''
-        sr_pairs = defaultdict(set)
-        ro_pairs = defaultdict(set)
-
-        for s, r, o in self.data['train']:
-            s_idx = self.entity_to_idx[s]
-            r_idx = self.relation_to_idx[r]
-            o_idx = self.entity_to_idx[o]
-            sr_pairs[(s_idx, r_idx)].add(o_idx)
-            ro_pairs[(r_idx, o_idx)].add(s_idx)
-
-        return sr_pairs, ro_pairs
+        return sr_pairs
 
     def get_all_facts(self, dataset: str) -> List[Tuple[int, int, int]]:
         '''

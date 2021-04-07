@@ -28,8 +28,9 @@ def generate_positive_objects_for_triple(
     '''
     positive = set()
 
-    for o in dl.sr_pairs[(s_idx, r_idx)]:
-        positive.add(o)
+    for dset in ['train', 'valid', 'test']:
+        for o in dl.sr_pairs[dset][(s_idx, r_idx)]:
+            positive.add(o)
 
     positive.add(o_idx)
 
@@ -74,7 +75,7 @@ def measure_performance(
     batch_test_loader = torch.utils.data.DataLoader(test_facts, batch_size=batch_size)
 
     for s, r, o in tqdm(batch_test_loader, 'Measuring performance'):
-        output = model(s, r)
+        output = model(s.to(device), r.to(device))
         positives = generate_positive_objects(dl, s, r, o)
 
         ranks = (((~positives) * output) >= torch.gather(output, 1, o.unsqueeze(1).to(device))).sum(dim=1) + 1
@@ -105,8 +106,8 @@ def _train_step(
     for subject_index, relation_index in tqdm(batch_loader, desc=desc):
         optimizer.zero_grad()
         output = model(
-            subject_index=subject_index,
-            relation_index=relation_index
+            subject_index.to(device),
+            relation_index.to(device)
         )
         target = data_loader.get_y(
             subject_idxs=subject_index,
@@ -125,8 +126,8 @@ def test(model, data_loader, batch_loader):
     total_predictions, correct_predictions = 0, 0
     for subject_index, relation_index in tqdm(batch_loader, 'Testing'):
         output = model(
-            subject_index=subject_index, 
-            relation_index=relation_index
+            subject_index.to(device), 
+            relation_index.to(device)
         )
         output = torch.round(output)
         target = data_loader.get_y(
@@ -159,8 +160,8 @@ def train(
         optimizer=optimizer,
         gamma=lr_decay
     )
-    sl = data_loader.get_1_to_n_train_data()[0]
-    batch_loader = torch.utils.data.DataLoader(list(sl.keys()), batch_size=batch_size)
+    sl = data_loader.sr_pairs
+    batch_loader = torch.utils.data.DataLoader(list(sl.keys()), batch_size=batch_size, shuffle=True)
     for epoch in range(epochs):
         _train_step(
             model=model,
