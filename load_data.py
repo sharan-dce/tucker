@@ -1,4 +1,6 @@
 from collections import defaultdict
+import numpy as np
+import torch
 
 class DataLoader:
 
@@ -16,6 +18,7 @@ class DataLoader:
                 if i not in self.train_relations]
         self.entity_idxs = {e:i for i, e in enumerate(self.entities)}
         self.relation_idxs = {r:i for i, r in enumerate(self.relations)}
+        self.cuda = torch.cuda.is_available()
 
     def _load_data(self, data_dir, data_type="train", reverse=False):
         with open("%s%s.txt" % (data_dir, data_type), "r") as f:
@@ -43,3 +46,12 @@ class DataLoader:
         for triple in data:
             er_vocab[(triple[0], triple[1])].append(triple[2])
         return er_vocab
+
+    def get_batch(self, er_vocab, er_vocab_batch):
+        targets = np.zeros((len(er_vocab_batch), len(self.entities)))
+        for idx, pair in enumerate(er_vocab_batch):
+            targets[idx, er_vocab[pair]] = 1.
+        targets = torch.FloatTensor(targets)
+        if self.cuda:
+            targets = targets.cuda()
+        return np.array(er_vocab_batch), targets

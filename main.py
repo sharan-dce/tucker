@@ -24,16 +24,6 @@ class Experiment:
         self.cuda = cuda
         self.kwargs = {"input_dropout": input_dropout, "hidden_dropout1": hidden_dropout1,
                        "hidden_dropout2": hidden_dropout2}
-   
-    def get_batch(self, er_vocab, er_vocab_pairs, idx):
-        batch = er_vocab_pairs[idx:idx+self.batch_size]
-        targets = np.zeros((len(batch), len(d.entities)))
-        for idx, pair in enumerate(batch):
-            targets[idx, er_vocab[pair]] = 1.
-        targets = torch.FloatTensor(targets)
-        if self.cuda:
-            targets = targets.cuda()
-        return np.array(batch), targets
 
     
     def evaluate(self, model, data):
@@ -48,7 +38,8 @@ class Experiment:
         print("Number of data points: %d" % len(test_data_idxs))
         
         for i in range(0, len(test_data_idxs), self.batch_size):
-            data_batch, _ = self.get_batch(er_vocab, test_data_idxs, i)
+            er_pairs = test_data_idxs[i: i + self.batch_size]
+            data_batch, _ = d.get_batch(er_vocab, test_data_idxs)
             e1_idx = torch.tensor(data_batch[:,0])
             r_idx = torch.tensor(data_batch[:,1])
             e2_idx = torch.tensor(data_batch[:,2])
@@ -117,7 +108,8 @@ class Experiment:
             losses = []
             np.random.shuffle(er_vocab_pairs)
             for j in range(0, len(er_vocab_pairs), self.batch_size):
-                data_batch, targets = self.get_batch(er_vocab, er_vocab_pairs, j)
+                er_pairs = er_vocab_pairs[j: j + self.batch_size]
+                data_batch, targets = d.get_batch(er_vocab, er_pairs)
                 opt.zero_grad()
                 e1_idx = torch.tensor(data_batch[:,0])
                 r_idx = torch.tensor(data_batch[:,1])  
