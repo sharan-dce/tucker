@@ -2,11 +2,12 @@ from load_data import DataLoader
 import numpy as np
 import torch
 import time
+from models import *
 from collections import defaultdict
-from model import *
 from torch.optim.lr_scheduler import ExponentialLR
 import argparse
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class Experiment:
 
@@ -77,20 +78,12 @@ class Experiment:
 
 
 
-    def train_and_eval(self):
+    def train_and_eval(self, model):
         print("Training the TuckER model...")
 
         train_data_idxs = d.get_data_idxs(d.train_data)
         print("Number of training data points: %d" % len(train_data_idxs))
 
-        model = TuckER(
-            num_entities=len(d.entities),
-            num_relations=len(d.relations),
-            initial_tensor=np.random.uniform(-1.0, 1.0, size=[self.rel_vec_dim, self.ent_vec_dim, self.ent_vec_dim]),
-            d1=self.kwargs['input_dropout'],
-            d2=self.kwargs['hidden_dropout1'],
-            d3=self.kwargs['hidden_dropout2']
-        )
         if self.cuda:
             model.cuda()
         opt = torch.optim.Adam(model.parameters(), lr=self.learning_rate)
@@ -143,6 +136,8 @@ class Experiment:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model", type=str, default="tucker", nargs="?",
+                    help="Which model to use: TuckER, DistMult, RESCAL")
     parser.add_argument("--dataset", type=str, default="FB15k-237", nargs="?",
                     help="Which dataset to use: FB15k, FB15k-237, WN18 or WN18RR.")
     parser.add_argument("--num_iterations", type=int, default=500, nargs="?",
@@ -166,16 +161,51 @@ if __name__ == '__main__':
     parser.add_argument("--label_smoothing", type=float, default=0.1, nargs="?",
                     help="Amount of label smoothing.")
 
+
     args = parser.parse_args()
     dataset = args.dataset
     data_dir = "data/%s/" % dataset
+    d = DataLoader(data_dir=data_dir, reverse=True)
+
+    if args.model == 'tucker':
+        from models import tucker
+        model = tucker.TuckER(
+            len(d.entities),
+            len(d.relations),
+            np.random.normal(size=[args.edim, args.rdim, args.edim]),
+            d1=args.input_dropout,
+            d2=args.hidden_dropout1,
+            d3=args.hidden_dropout2
+        ).to(device)
+    elif args.model == 'rescal':
+        from models import rescal
+        model = rescal.RESCAL(
+            len(d.entities),
+            len(d.relations),
+            args.edim,
+            d1=args.input_dropout,
+            d2=args.hidden_dropout1,
+            d3=args.hidden_dropout2
+        ).to(device)
+    elif args.model == 'distmult':
+        from models import distmult
+        model = distmult.DistMult(
+            len(d.entities),
+            len(d.relations),
+            args.edim,
+            d1=args.input_dropout,
+            d2=args.hidden_dropout1,
+            d3=args.hidden_dropout2
+        ).to(device)
+    else:
+        raise Exception("Model not defined!")
+
     torch.backends.cudnn.deterministic = True 
     seed = 20
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available:
         torch.cuda.manual_seed_all(seed) 
-    d = DataLoader(data_dir=data_dir, reverse=True)
     cuda = False
     if torch.cuda.is_available():
         cuda = True
@@ -183,4 +213,4 @@ if __name__ == '__main__':
                             decay_rate=args.dr, ent_vec_dim=args.edim, rel_vec_dim=args.rdim, cuda=cuda,
                             input_dropout=args.input_dropout, hidden_dropout1=args.hidden_dropout1, 
                             hidden_dropout2=args.hidden_dropout2, label_smoothing=args.label_smoothing)
-    experiment.train_and_eval()
+    experiment.train_and_eval(model)

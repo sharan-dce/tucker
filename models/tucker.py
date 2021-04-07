@@ -5,11 +5,14 @@ from torch.nn.init import xavier_normal_
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class TuckER(torch.nn.Module):
-    def __init__(self,
+    def __init__(
+        self,
         num_entities: int,
         num_relations: int,
         initial_tensor: np.ndarray,             # pass in a rdim x edim x edim tensor to initialize with
         d1: float=0.0, d2: float=0.0, d3: float=0.0,     # 3 dropout values
+        initial_entity_embeddings=None,
+        initial_relation_embeddings=None
         ):
         super(TuckER, self).__init__()
         assert(initial_tensor.shape[1] == initial_tensor.shape[2])
@@ -27,6 +30,10 @@ class TuckER(torch.nn.Module):
         # get batch norms and dropouts
         self.batch_norms = torch.nn.ModuleList([torch.nn.BatchNorm1d(dim) for dim in [self.edim, self.edim]])
         self.dropouts = torch.nn.ModuleList([torch.nn.Dropout(drop_prob) for drop_prob in [d1, d2, d3]])
+        if initial_entity_embeddings is not None:
+            self.set_entity_embeddings(initial_entity_embeddings)
+        if initial_relation_embeddings is not None:
+            self.set_relation_embeddings(initial_relation_embeddings)
 
         # xavier initialization
         # not mentioned in the paper
@@ -35,6 +42,13 @@ class TuckER(torch.nn.Module):
         xavier_normal_(self.entity_embeddings.weight.data)
         xavier_normal_(self.relation_embeddings.weight.data)
         
+    def set_entity_embeddings(self, entity_embeddings):
+        entity_embeddings = torch.from_numpy(entity_embeddings)
+        self.entity_embeddings.weight.data.copy_(entity_embeddings)
+
+    def set_relation_embeddings(self, relation_embeddings):
+        relation_embeddings = torch.from_numpy(relation_embeddings)
+        self.relation_embeddings.weight.data.copy_(relation_embeddings)
 
     def _process_entities(self, entities):
         # batch norm first on entity embeddings
