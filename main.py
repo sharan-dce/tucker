@@ -24,11 +24,6 @@ class Experiment:
         self.cuda = cuda
         self.kwargs = {"input_dropout": input_dropout, "hidden_dropout1": hidden_dropout1,
                        "hidden_dropout2": hidden_dropout2}
-        
-    def get_data_idxs(self, data):
-        data_idxs = [(self.entity_idxs[data[i][0]], self.relation_idxs[data[i][1]], \
-                      self.entity_idxs[data[i][2]]) for i in range(len(data))]
-        return data_idxs
     
     def get_er_vocab(self, data):
         er_vocab = defaultdict(list)
@@ -53,8 +48,8 @@ class Experiment:
         for i in range(10):
             hits.append([])
 
-        test_data_idxs = self.get_data_idxs(data)
-        er_vocab = self.get_er_vocab(self.get_data_idxs(d.data))
+        test_data_idxs = d.get_data_idxs(data)
+        er_vocab = self.get_er_vocab(d.get_data_idxs(d.data))
 
         print("Number of data points: %d" % len(test_data_idxs))
         
@@ -99,10 +94,8 @@ class Experiment:
 
     def train_and_eval(self):
         print("Training the TuckER model...")
-        self.entity_idxs = {d.entities[i]:i for i in range(len(d.entities))}
-        self.relation_idxs = {d.relations[i]:i for i in range(len(d.relations))}
 
-        train_data_idxs = self.get_data_idxs(d.train_data)
+        train_data_idxs = d.get_data_idxs(d.train_data)
         print("Number of training data points: %d" % len(train_data_idxs))
 
         model = TuckER(
