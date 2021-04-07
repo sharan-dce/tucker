@@ -28,6 +28,10 @@ class TuckER(torch.nn.Module):
         self.batch_norms = torch.nn.ModuleList([torch.nn.BatchNorm1d(dim) for dim in [self.edim, self.edim]])
         self.dropouts = torch.nn.ModuleList([torch.nn.Dropout(drop_prob) for drop_prob in [d1, d2, d3]])
 
+        # xavier initialization
+        # not mentioned in the paper
+        # but in the code
+        # fast convergence was noticed
         xavier_normal_(self.entity_embeddings.weight.data)
         xavier_normal_(self.relation_embeddings.weight.data)
         
