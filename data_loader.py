@@ -33,7 +33,7 @@ class DataLoader:
         Index-based
         '''
         assert(len(subject_idxs) == len(relation_idxs))
-        result = torch.zeros((len(self.entities), len(subject_idxs)))
+        result = torch.zeros((len(self.entities), len(subject_idxs)), requires_grad=False)
 
         for i, (si, ri) in enumerate(zip(subject_idxs, relation_idxs)):
             for v in self.sr_pairs[(si.item(), ri.item())]:
