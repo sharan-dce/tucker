@@ -1,8 +1,8 @@
 import torch
 import numpy as np
-from tucker import TuckER
+from . import tucker
 
-class DistMult(TuckER):
+class DistMult(tucker.TuckER):
     def __init__(
             self, 
             num_entities: int,
@@ -17,7 +17,6 @@ class DistMult(TuckER):
             num_entities=num_entities,
             num_relations=num_relations,
             initial_tensor=ini_tensor,
-            gradient_mask=np.zeros_like(ini_tensor).astype(np.float32),
             d1=d1, d2=d2, d3=d3
         )
         self.core_tensor.requires_grad = False

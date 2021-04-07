@@ -1,11 +1,11 @@
 import torch
 import numpy as np
-from tucker import TuckER
+from . import tucker
 
 
 # RESCAL model supporting batches of subjects and relations
 
-class RESCAL(TuckER):
+class RESCAL(tucker.TuckER):
     def __init__(
             self,
             num_entities: int,
@@ -16,7 +16,7 @@ class RESCAL(TuckER):
         super(RESCAL, self).__init__(
             num_entities=num_entities,
             num_relations=num_relations,
-            initial_tensor=np.random.normal(size=[embedding_dim, num_relations, embedding_dim]),
+            initial_tensor=np.random.normal(size=[num_relations, embedding_dim, embedding_dim]),
             initial_relation_embeddings=np.identity(num_relations, dtype=np.float32),
             d1=d1, d2=d2, d3=d3
         )

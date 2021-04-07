@@ -1,104 +1,47 @@
-import torch
-from typing import List
 import numpy as np
+import torch
 from torch.nn.init import xavier_normal_
-
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
-# def batched_tensorvectormul(x, y, axis):
-#     '''
-#     x: tensor of shape b x * x d x * where * denotes any dimensions in between
-#     y: matrix of shape b x d
-#     '''
-#     assert(len(y.shape) == 2)
-#     assert(axis in range(1, len(x.shape)))
-#     assert(x.shape[0] == y.shape[0])
-#     assert(x.shape[axis] == y.shape[1])
-#     y_new_shape = [x_dim if ax == axis or ax == 0 else 1 for ax, x_dim in enumerate(x.shape)]
-#     y = torch.reshape(input=y, shape=y_new_shape)
-#     broadcasted_hadamard = x * y
-#     product = torch.sum(broadcasted_hadamard, axis=axis)
-#     return product
-
-
-def get_gradient_masked_tensor_clone(tensor, grad_mask):
-    '''
-    Creates a copy of 'tensor' that sends non zero gradients only at areas marked as '1' in 'grad_mask'
-    '''
-    tensor_clone = tensor.detach()
-    tensor = tensor * grad_mask
-    tensor_clone = tensor_clone * (1.0 - grad_mask)
-    return tensor + tensor_clone
-
-
-def tucker_multiplication(
-    core, s, r, o,
-    d1: torch.nn.Dropout, d2: torch.nn.Dropout, d3: torch.nn.Dropout,
-    b1: torch.nn.BatchNorm1d, b2: torch.nn.BatchNorm1d):
-    '''
-    core of shape e x r x e
-    s of shape b x e
-    r of shape b x r
-    o of shape n x e
-    b refers to the batch size, and n the number of objects
-    '''
-
-    x = b1(s)
-    x = d1(x)
-    x = x.view(-1, 1, s.size(1))
-
-    core_mat = torch.mm(r, core.view(r.size(1), -1))
-    core_mat = core_mat.view(-1, s.size(1), s.size(1))
-    core_mat = d2(core_mat)
-
-    x = torch.bmm(x, core_mat)
-    x = x.view(-1, s.size(1))
-    x = b2(x)
-    x = d3(x)
-    x = torch.mm(x, o.transpose(1, 0))
-    return x
-
-
 class TuckER(torch.nn.Module):
     def __init__(
-            self, 
-            num_entities: int,
-            num_relations: int,
-            initial_tensor,
-            gradient_mask=None,
-            d1=0.0, d2=0.0, d3=0.0,
-            initial_entity_embeddings=None,
-            initial_relation_embeddings=None
+        self,
+        num_entities: int,
+        num_relations: int,
+        initial_tensor: np.ndarray,             # pass in a rdim x edim x edim tensor to initialize with
+        d1: float=0.0, d2: float=0.0, d3: float=0.0,     # 3 dropout values
+        initial_entity_embeddings=None,
+        initial_relation_embeddings=None
         ):
-        if gradient_mask is None:
-            gradient_mask = np.ones(initial_tensor.shape, dtype=np.float32)
-
         super(TuckER, self).__init__()
-        assert(initial_tensor.shape == gradient_mask.shape)
-        entity_embedding_dim, relation_embedding_dim = initial_tensor.shape[: 2]
-        self.gradient_mask = torch.tensor(gradient_mask.astype(np.float32), requires_grad=False).to(device)
-        self.core_tensor = torch.nn.Parameter(
-                                        torch.tensor(initial_tensor.astype(np.float32)).to(device),
-                                        requires_grad=True
-                                    )
+        assert(initial_tensor.shape[1] == initial_tensor.shape[2])
 
-        self.dropouts = torch.nn.ModuleList([torch.nn.Dropout(d) for d in [d1, d2, d3]])
-        self.batch_norms = torch.nn.ModuleList([
-            torch.nn.BatchNorm1d(entity_embedding_dim),
-            torch.nn.BatchNorm1d(entity_embedding_dim)
-        ])
+        self.rdim, self.edim = initial_tensor.shape[: 2]
 
-        self.entity_embeddings = torch.nn.Embedding(num_entities, entity_embedding_dim)
-        xavier_normal_(self.entity_embeddings.weight.data)
-        self.relation_embeddings = torch.nn.Embedding(num_relations, relation_embedding_dim)
-        xavier_normal_(self.relation_embeddings.weight.data)
+        # Get parameters for model
+        self.entity_embeddings = torch.nn.Embedding(num_entities, self.edim)
+        self.relation_embeddings = torch.nn.Embedding(num_relations, self.rdim)
+        self.core_tensor = torch.nn.Parameter(torch.tensor(
+                                    initial_tensor.astype(np.float32),
+                                    device=device,
+                                    requires_grad=True
+                                ))
+        # get batch norms and dropouts
+        self.batch_norms = torch.nn.ModuleList([torch.nn.BatchNorm1d(dim) for dim in [self.edim, self.edim]])
+        self.dropouts = torch.nn.ModuleList([torch.nn.Dropout(drop_prob) for drop_prob in [d1, d2, d3]])
         if initial_entity_embeddings is not None:
             self.set_entity_embeddings(initial_entity_embeddings)
         if initial_relation_embeddings is not None:
             self.set_relation_embeddings(initial_relation_embeddings)
-    
+
+        # xavier initialization
+        # not mentioned in the paper
+        # but in the code
+        # fast convergence was noticed
+        xavier_normal_(self.entity_embeddings.weight.data)
+        xavier_normal_(self.relation_embeddings.weight.data)
+        
     def set_entity_embeddings(self, entity_embeddings):
         entity_embeddings = torch.from_numpy(entity_embeddings)
         self.entity_embeddings.weight.data.copy_(entity_embeddings)
@@ -107,26 +50,55 @@ class TuckER(torch.nn.Module):
         relation_embeddings = torch.from_numpy(relation_embeddings)
         self.relation_embeddings.weight.data.copy_(relation_embeddings)
 
-    def forward(self, subject_index, relation_index):
-        batch_size = subject_index.shape[0]
-        core_tensor = get_gradient_masked_tensor_clone(self.core_tensor, self.gradient_mask)
-        subject = self.entity_embeddings(torch.LongTensor(subject_index).to(device))
-        relation = self.relation_embeddings(torch.LongTensor(relation_index).to(device))
-        objects = self.entity_embeddings.weight
+    def _process_entities(self, entities):
+        # batch norm first on entity embeddings
+        entities = self.batch_norms[0](entities)
+        entities = self.dropouts[0](entities).unsqueeze(1)
+        return entities
+    
+    def _core_relations_prod(self, relations):
+        # first product - alond axis 0 of core tensor - relation dimension
+        core_view = self.core_tensor.view(self.rdim, -1)
+        core = torch.mm(relations, core_view)
+        # multiplication done-
+        # now reshape core tensor back
+        # first dimension must have vanished
+        # batch size will be first after this operation
+        core = core.view(-1, self.edim, self.edim)
+        core = self.dropouts[1](core)
+        return core
 
-        if len(relation.shape) == 1:
-            relation = torch.unsqueeze(relation, axis=0)
-        if len(subject.shape) == 1:
-            subject = torch.unsqueeze(subject, axis=0)
-
-        output = tucker_multiplication(
-            core_tensor, 
-            subject, 
-            relation, 
-            objects, 
-            *self.dropouts, 
-            *self.batch_norms
-        )
-        output = torch.sigmoid(output)
-        output = torch.reshape(output, [batch_size, -1])
+    def _core_entities_product(self, core, entities):
+        batch_size = entities.size(0)
+        output = torch.bmm(entities, core).view(batch_size, -1)
+        # now have batch_size x matrices - 
+        # batch multiply them
+        # and flatten along final dimension
+        output = self.batch_norms[1](output)
+        output = self.dropouts[2](output)
+        # dot with all entities to get scalars
+        all_entities = self.entity_embeddings.weight
+        output = torch.mm(all_entities, output.transpose(0, 1))
         return output
+
+
+    def forward(
+        self, 
+        batched_entities: torch.tensor, 
+        batched_relations: torch.tensor
+        ):
+        assert(batched_entities.shape == batched_relations.shape)
+        batch_size = batched_entities.size(0)
+
+        entities = self.entity_embeddings(batched_entities)
+        relations = self.relation_embeddings(batched_relations)
+
+        entities = self._process_entities(entities=entities)
+        # core will lose one dimensions after this
+        multiplied_core = self._core_relations_prod(relations=relations)
+        # core will lose other 2 dimensions after this to
+        # return a scalar
+        output = self._core_entities_product(multiplied_core, entities)
+        
+        probs = torch.sigmoid(output)
+        return probs.transpose(0, 1)
