@@ -41,7 +41,6 @@ class TuckER(torch.nn.Module):
     def _core_relations_prod(self, relations):
         # first product - alond axis 0 of core tensor - relation dimension
         core_view = self.core_tensor.view(self.rdim, -1)
-        print(relations.dtype, core_view.dtype)
         core = torch.mm(relations, core_view)
         # multiplication done-
         # now reshape core tensor back
