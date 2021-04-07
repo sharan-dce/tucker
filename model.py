@@ -68,7 +68,8 @@ class TuckER(torch.nn.Module):
         return output
 
 
-    def forward(self, 
+    def forward(
+        self, 
         batched_entities: torch.tensor, 
         batched_relations: torch.tensor
         ):
