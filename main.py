@@ -1,4 +1,4 @@
-from load_data import Data
+from load_data import DataLoader
 import numpy as np
 import torch
 import time
@@ -10,8 +10,8 @@ import argparse
 
 class Experiment:
 
-    def __init__(self, learning_rate=0.0005, ent_vec_dim=200, rel_vec_dim=200, 
-                 num_iterations=500, batch_size=128, decay_rate=0., cuda=False, 
+    def __init__(self, learning_rate=0.0005, ent_vec_dim=200, rel_vec_dim=200,
+                 num_iterations=500, batch_size=128, decay_rate=0., cuda=False,
                  input_dropout=0.3, hidden_dropout1=0.4, hidden_dropout2=0.5,
                  label_smoothing=0.):
         self.learning_rate = learning_rate
@@ -24,13 +24,7 @@ class Experiment:
         self.cuda = cuda
         self.kwargs = {"input_dropout": input_dropout, "hidden_dropout1": hidden_dropout1,
                        "hidden_dropout2": hidden_dropout2}
-    
-    def get_er_vocab(self, data):
-        er_vocab = defaultdict(list)
-        for triple in data:
-            er_vocab[(triple[0], triple[1])].append(triple[2])
-        return er_vocab
-
+   
     def get_batch(self, er_vocab, er_vocab_pairs, idx):
         batch = er_vocab_pairs[idx:idx+self.batch_size]
         targets = np.zeros((len(batch), len(d.entities)))
@@ -49,7 +43,7 @@ class Experiment:
             hits.append([])
 
         test_data_idxs = d.get_data_idxs(data)
-        er_vocab = self.get_er_vocab(d.get_data_idxs(d.data))
+        er_vocab = d.get_er_vocab(d.get_data_idxs(d.data))
 
         print("Number of data points: %d" % len(test_data_idxs))
         
@@ -112,7 +106,7 @@ class Experiment:
         if self.decay_rate:
             scheduler = ExponentialLR(opt, self.decay_rate)
 
-        er_vocab = self.get_er_vocab(train_data_idxs)
+        er_vocab = d.get_er_vocab(train_data_idxs)
         er_vocab_pairs = list(er_vocab.keys())
         bce_loss = torch.nn.BCELoss()
 
@@ -189,7 +183,7 @@ if __name__ == '__main__':
     torch.manual_seed(seed)
     if torch.cuda.is_available:
         torch.cuda.manual_seed_all(seed) 
-    d = Data(data_dir=data_dir, reverse=True)
+    d = DataLoader(data_dir=data_dir, reverse=True)
     cuda = False
     if torch.cuda.is_available():
         cuda = True
@@ -198,5 +192,3 @@ if __name__ == '__main__':
                             input_dropout=args.input_dropout, hidden_dropout1=args.hidden_dropout1, 
                             hidden_dropout2=args.hidden_dropout2, label_smoothing=args.label_smoothing)
     experiment.train_and_eval()
-                
-

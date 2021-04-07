@@ -1,4 +1,6 @@
-class Data:
+from collections import defaultdict
+
+class DataLoader:
 
     def __init__(self, data_dir="data/FB15k-237/", reverse=False):
         self.train_data = self._load_data(data_dir, "train", reverse=reverse)
@@ -35,3 +37,9 @@ class Data:
         data_idxs = [(self.entity_idxs[data[i][0]], self.relation_idxs[data[i][1]], \
                       self.entity_idxs[data[i][2]]) for i in range(len(data))]
         return data_idxs
+ 
+    def get_er_vocab(self, data):
+        er_vocab = defaultdict(list)
+        for triple in data:
+            er_vocab[(triple[0], triple[1])].append(triple[2])
+        return er_vocab
