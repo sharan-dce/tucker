@@ -163,6 +163,7 @@ if __name__ == '__main__':
 
 
     args = parser.parse_args()
+    print('Script arguments: ', args)
     dataset = args.dataset
     data_dir = "data/%s/" % dataset
     d = DataLoader(data_dir=data_dir, reverse=True)
