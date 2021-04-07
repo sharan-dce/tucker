@@ -7,7 +7,7 @@ from model import *
 from torch.optim.lr_scheduler import ExponentialLR
 import argparse
 
-    
+
 class Experiment:
 
     def __init__(self, learning_rate=0.0005, ent_vec_dim=200, rel_vec_dim=200, 
@@ -178,8 +178,6 @@ if __name__ == '__main__':
                     help="Entity embedding dimensionality.")
     parser.add_argument("--rdim", type=int, default=200, nargs="?",
                     help="Relation embedding dimensionality.")
-    parser.add_argument("--cuda", type=bool, default=True, nargs="?",
-                    help="Whether to use cuda (GPU) or not (CPU).")
     parser.add_argument("--input_dropout", type=float, default=0.3, nargs="?",
                     help="Input layer dropout.")
     parser.add_argument("--hidden_dropout1", type=float, default=0.4, nargs="?",
@@ -199,8 +197,11 @@ if __name__ == '__main__':
     if torch.cuda.is_available:
         torch.cuda.manual_seed_all(seed) 
     d = Data(data_dir=data_dir, reverse=True)
+    cuda = False
+    if torch.cuda.is_available():
+        cuda = True
     experiment = Experiment(num_iterations=args.num_iterations, batch_size=args.batch_size, learning_rate=args.lr, 
-                            decay_rate=args.dr, ent_vec_dim=args.edim, rel_vec_dim=args.rdim, cuda=args.cuda,
+                            decay_rate=args.dr, ent_vec_dim=args.edim, rel_vec_dim=args.rdim, cuda=cuda,
                             input_dropout=args.input_dropout, hidden_dropout1=args.hidden_dropout1, 
                             hidden_dropout2=args.hidden_dropout2, label_smoothing=args.label_smoothing)
     experiment.train_and_eval()

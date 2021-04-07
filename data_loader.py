@@ -1,4 +1,6 @@
-class Data:
+from typing import List
+
+class DataLoader:
 
     def __init__(
         self,
@@ -23,7 +25,7 @@ class Data:
         self.entities = self._get_entities()
         self.relations = self._get_relations()
 
-    def _get_entities(self) -> Set[str]:
+    def _get_entities(self) -> List[str]:
         '''
         Get all the entities present in any of the datasets
         '''
@@ -34,7 +36,7 @@ class Data:
 
         return list(entities)
 
-    def _get_relations(self) -> Set[str]:
+    def _get_relations(self) -> List[str]:
         '''
         Get all the relations present in any of the datasets
         '''
