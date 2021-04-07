@@ -113,7 +113,6 @@ class Experiment:
             d2=self.kwargs['hidden_dropout1'],
             d3=self.kwargs['hidden_dropout2']
         )
-        model = TuckER(d, self.ent_vec_dim, self.rel_vec_dim, **self.kwargs)
         if self.cuda:
             model.cuda()
         model.init()
