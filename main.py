@@ -105,6 +105,14 @@ class Experiment:
         train_data_idxs = self.get_data_idxs(d.train_data)
         print("Number of training data points: %d" % len(train_data_idxs))
 
+        model = TuckER(
+            num_entities=len(d.entities),
+            num_relations=len(d.relations),
+            initial_tensor=np.random.uniform(-1.0, 1.0, size=[self.rel_vec_dim, self.ent_vec_dim, self.ent_vec_dim]),
+            d1=self.kwargs['input_dropout'],
+            d2=self.kwargs['hidden_dropout1'],
+            d3=self.kwargs['hidden_dropout2']
+        )
         model = TuckER(d, self.ent_vec_dim, self.rel_vec_dim, **self.kwargs)
         if self.cuda:
             model.cuda()
