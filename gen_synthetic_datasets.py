@@ -47,25 +47,21 @@ def gen_compositions(n_e=9999, p_test=0.3):
       train += facts
   return train, test
 
-
-def gen_hierarchies(n_e=10008, p_test=0.5):
-  # Generate a synthetic dataset with a non-trivial
-  # hierarchy r1 => r2
+  
+def gen_hierarchies(n_e=9999, p_test=0.3):
+  # Generate a synthetic dataset with composing relations
   train = []
   test = []
-  for i in range(0, n_e//2, 4):
-    facts = [(i, 0, i+1), (i+1, 1, i), (i, 2, i+1), (i+2, 2, i+3)]
-    train += facts
-  for i in range(n_e//2, n_e, 3):
-    facts = [(i, 0, i+1), (i+1, 1, i), (i, 2, i+2), (i, 2, i+1)]
-    if random.random() > p_test:
-      test_fact = facts[0]
-      train_facts = facts[1:]
+  for i in range(0, n_e, 3):
+    rel_0 = [(i, 0, i+1), (i, 0, i+2)]
+    rel_1_2 = [(i, 1, i+1), (i, 2, i+2)]
+    if random.random() < p_test:	
+      test_fact, rel_0 = take(rel_0)
       test.append(test_fact)
-      train += train_facts
+      train += rel_0 + rel_1_2
     else:
-      train += facts
-  return train, test
+      train += rel_0 + rel_1_2
+  return train, test  
 
   
 def to_csv(facts, file):
