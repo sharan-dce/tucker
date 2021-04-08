@@ -113,7 +113,7 @@ def _train_step(
             subject_idxs=subject_index,
             relation_idxs=relation_index
         ).to(device)
-        target = (1.0 - label_smoothing_rate) * target + label_smoothing_rate * (1.0 / target.size(1))
+        target = (1.0 - label_smoothing_rate) * target + (1.0 / target.size(1))
         loss_val = loss(output, target=target)
         loss_val.backward()
         loss_avg += loss_val.item()
