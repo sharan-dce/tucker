@@ -61,7 +61,9 @@ class DataLoader:
 
         This function returns the indices of the entities and relations
         '''
-        for dset_name, dset in self.data:
+        sr_pairs = {k: defaultdict(set) for k in ['train', 'valid', 'test']}
+
+        for dset_name, dset in self.data.items():
             for s, r, o in dset:
                 s_idx = self.entity_to_idx[s]
                 r_idx = self.relation_to_idx[r]
