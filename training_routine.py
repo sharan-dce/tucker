@@ -160,7 +160,7 @@ def train(
         optimizer=optimizer,
         gamma=lr_decay
     )
-    sl = data_loader.sr_pairs
+    sl = data_loader.sr_pairs['train']
     batch_loader = torch.utils.data.DataLoader(list(sl.keys()), batch_size=batch_size, shuffle=True)
     for epoch in range(epochs):
         _train_step(
