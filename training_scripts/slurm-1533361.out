@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "train_script.py", line 49, in <module>
+    model = tucker.TuckER(
+  File "../models/tucker.py", line 18, in __init__
+    assert(initial_tensor.shape[1] == initial_tensor.shape[2])
+AssertionError

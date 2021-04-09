@@ -49,7 +49,7 @@ if __name__ == '__main__':
         model = tucker.TuckER(
             len(dl.entities),
             len(dl.relations),
-            np.random.uniform(-1, 1, (args.edim, args.rdim, args.edim)),
+            np.random.uniform(-1, 1, (args.rdim, args.edim, args.edim)),
             d1=args.input_dropout,
             d2=args.hidden_dropout1,
             d3=args.hidden_dropout2
