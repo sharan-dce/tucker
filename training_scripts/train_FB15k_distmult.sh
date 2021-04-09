@@ -11,11 +11,11 @@ module load gpu/cudnn/7.6.5__cuda-10.1
 source activate sneaky_env
 
 DATE=$(date +"%H.%M.%S_%d-%m-%Y")
-FILENAME="FB15k_$DATE_distmult.txt"
+FILENAME="FB15k-237_$DATE_distmult.txt"
 
 python3 -u train_script.py\
     --model=distmult\
-    --datapath=../data/FB15k\
+    --datapath=../data/FB15k-237\
     --num_iterations=500\
     --batch_size=64\
     --lr=0.003\
