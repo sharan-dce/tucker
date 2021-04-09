@@ -1,5 +1,9 @@
 # TuckER
 
+<p align="center">
+  <img width="550" height="300" src="TuckER.png">
+</p>
+
 ## Using the TuckER class
 
 This class fully supports batching.
