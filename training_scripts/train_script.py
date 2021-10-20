@@ -1,9 +1,9 @@
 import argparse
 import sys
 sys.path.insert(0, '../')
-import data_loader
+from src import data_loader
 import numpy as np
-from training_routine import train, measure_performance
+from src.training_routine import train
 import torch
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -45,7 +45,7 @@ if __name__ == '__main__':
     dl = data_loader.DataLoader(args.datapath)
 
     if args.model == 'tucker':
-        from models import tucker
+        from src.models import tucker
         model = tucker.TuckER(
             len(dl.entities),
             len(dl.relations),
@@ -55,7 +55,7 @@ if __name__ == '__main__':
             d3=args.hidden_dropout2
         ).to(device)
     elif args.model == 'rescal':
-        from models import rescal
+        from src.models import rescal
         model = rescal.RESCAL(
             len(dl.entities),
             len(dl.relations),
@@ -65,7 +65,7 @@ if __name__ == '__main__':
             d3=args.hidden_dropout2
         ).to(device)
     elif args.model == 'distmult':
-        from models import distmult
+        from src.models import distmult
         model = distmult.DistMult(
             len(dl.entities),
             len(dl.relations),
